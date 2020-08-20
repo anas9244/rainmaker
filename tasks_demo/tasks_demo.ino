@@ -207,11 +207,11 @@ void set_led_ratio(unsigned long break_time, unsigned long work_time, bool show_
     work_leds = 9;
   }
   for (int i = 0; i <= int(work_leds); i++) {
-    leds[i] = CRGB ( 100, 0, 0);
+    leds[i] = CRGB ( 80, 0, 0);
   }
 
   for (int i = int(work_leds); i <= 9; i++) {
-    leds[i] = CRGB ( 0, 100, 0);
+    leds[i] = CRGB ( 0, 80, 0);
   }
 
   FastLED.show();
