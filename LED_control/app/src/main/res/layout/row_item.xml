@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+
+    android:layout_width="match_parent"
+    android:layout_height="70dp"
+    android:layout_marginTop="5dp"
+    android:layout_marginBottom="5dp"
+
+    android:background="@android:color/white"
+    android:foreground="?attr/selectableItemBackground">
+
+
+    <FrameLayout
+        android:id="@+id/frameTask"
+        android:layout_width="100dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:background="#BDBDBD">
+
+        <ImageView
+            android:id="@+id/imageViewTask"
+            android:layout_width="40dp"
+            android:layout_height="50dp"
+            android:layout_gravity="center"
+            android:visibility="gone"
+            app:srcCompat="@mipmap/hand" />
+
+        <Button
+            android:id="@+id/buttonTask"
+            style="@style/SelectableItemBackground"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+
+            android:layout_gravity="center"
+            android:enabled="false"
+
+            android:hapticFeedbackEnabled="true"
+            android:text="Done"
+            android:textColor="#FFFFFF" />
+    </FrameLayout>
+
+    <EditText
+        android:id="@+id/edittextTask"
+        android:layout_width="300dp"
+        android:layout_height="match_parent"
+        android:layout_gravity="center"
+        android:layout_marginLeft="20dp"
+        android:backgroundTint="#0C77FB"
+        android:gravity="center"
+        android:hint="click here to edit"
+        android:imeOptions="actionSend"
+        android:inputType="text"
+        android:textAlignment="textStart"
+        android:textSize="18sp" />
+
+
+    <TextView
+        android:id="@+id/textViewTask"
+        android:layout_width="300dp"
+        android:layout_height="90dp"
+        android:gravity="center"
+        android:layout_gravity="center"
+        android:includeFontPadding="false"
+        android:paddingStart="16dp"
+        android:text="TextView "
+        android:textAlignment="textStart"
+        android:textSize="18sp"
+        android:visibility="gone"
+        tools:ignore="RtlCompat"
+        android:layout_marginLeft="20dp"/>
+
+
+</LinearLayout>
