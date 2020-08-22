@@ -7,6 +7,8 @@ import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.WindowManager;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.EdgeEffect;
 import android.widget.EditText;
 
@@ -24,7 +26,7 @@ public class DialogTaskClass extends AppCompatDialogFragment {
     @NonNull
     @Override
     public Dialog onCreateDialog(@Nullable Bundle savedInstanceState) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+        final AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
 
         LayoutInflater inflater =getActivity().getLayoutInflater();
         View view = inflater.inflate(R.layout.layout_task_dialog,null);
@@ -32,6 +34,10 @@ public class DialogTaskClass extends AppCompatDialogFragment {
         builder.setView(view).setTitle("Task Info").setPositiveButton("Done", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
+                InputMethodManager inputMethodManager = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
+                inputMethodManager.hideSoftInputFromWindow(edit_task.getWindowToken(),0);
+
+
                 String taskName = edit_task.getText().toString();
 
                 listener.applyText(taskName,getArguments().getBoolean("editMode"),getArguments().getInt("taskId"));
@@ -39,11 +45,22 @@ public class DialogTaskClass extends AppCompatDialogFragment {
             }
         });
     edit_task = view.findViewById(R.id.edit_task);
+    edit_task.requestFocus();
 
-        if (getArguments() != null && !TextUtils.isEmpty(getArguments().getString("taskName"))){
 
-            edit_task.setText(getArguments().getString("taskName"));
-        }
+
+
+
+
+
+    if (getArguments() != null && !TextUtils.isEmpty(getArguments().getString("taskName"))){
+
+        edit_task.setText(getArguments().getString("taskName"));
+        edit_task.setSelection(edit_task.getText().length());
+    }
+
+        InputMethodManager inputMethodManager = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
+        inputMethodManager.toggleSoftInput(InputMethodManager.SHOW_FORCED,0);
 
 
 

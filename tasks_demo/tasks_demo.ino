@@ -158,41 +158,41 @@ void fade_leds()
 void set_led_tasks(int  tasks, int all_tasks, bool vertical_orient) {
 
 
-    if (vertical_orient == 0) {
+  if (vertical_orient == 0) {
 
-      for (int i = 0; i <= tasks; i++) {
-        leds[i] = CRGB ( 0, 0, 255);
-      }
-
-      for (int i = tasks; i <= all_tasks; i++) {
-        leds[i] = CRGB ( 0, 0, 5);
-      }
-
-      for (int i = all_tasks; i <= 9; i++) {
-        leds[i] = CRGB ( 0, 0, 0);
-      }
-
-      FastLED.show();
+    for (int i = 0; i <= tasks; i++) {
+      leds[i] = CRGB ( 0, 0, 255);
     }
-    else {
 
-      for (int i = 9; i >= 9 - tasks; i--) {
-        leds[i] = CRGB ( 0, 0, 255);
-
-      }
-
-      for (int i = 9 - tasks; i >= (9 - all_tasks); i--) {
-        leds[i] = CRGB ( 0, 0, 5);
-
-      }
-
-      for (int i = (9 - all_tasks); i >= 0; i--) {
-        leds[i] = CRGB ( 0, 0, 0);
-
-      }
-      FastLED.show();
+    for (int i = tasks; i <= all_tasks; i++) {
+      leds[i] = CRGB ( 0, 0, 5);
     }
-  
+
+    for (int i = all_tasks; i <= 9; i++) {
+      leds[i] = CRGB ( 0, 0, 0);
+    }
+
+    FastLED.show();
+  }
+  else {
+
+    for (int i = 9; i >= 9 - tasks; i--) {
+      leds[i] = CRGB ( 0, 0, 255);
+
+    }
+
+    for (int i = 9 - tasks; i >= (9 - all_tasks); i--) {
+      leds[i] = CRGB ( 0, 0, 5);
+
+    }
+
+    for (int i = (9 - all_tasks); i >= 0; i--) {
+      leds[i] = CRGB ( 0, 0, 0);
+
+    }
+    FastLED.show();
+  }
+
 }
 void set_led_ratio(unsigned long break_time, unsigned long work_time) {
 
@@ -238,13 +238,14 @@ void led_bat_lvl(int bat_lvl) {
 
 
 BluetoothSerial SerialBT;
-RTC_NOINIT_ATTR int all_tasks;
+//RTC_NOINIT_ATTR int all_tasks;
+int all_tasks;
 
 void setup() {
 
-  if (all_tasks>10){
-    all_tasks=0;
-    }
+  if (all_tasks > 10) {
+    all_tasks = 0;
+  }
 
 
 
@@ -394,9 +395,9 @@ void loop() {
   if (toggle_shake) {
 
     leds_off();
-    
+
     if (bt_off_once) {
-      bt_off_once=false;
+      bt_off_once = false;
       SerialBT.flush();
       if (btStop()) {
         Serial.println("bt is off!");
@@ -407,8 +408,8 @@ void loop() {
 
 
     //Serialbt.flush();
-    
-    
+
+
 
     //    esp_bluedroid_disable();
     //    esp_bluedroid_deinit();
@@ -418,14 +419,14 @@ void loop() {
   else {
 
     if (bt_once) {
-//      bt_once = false;
-//      if (SerialBT.begin("The_Rainmaker!")) {
-//        Serial.println("bt is on!");
-//        
-//      }
-//      delay(100);
-//
-      bt_off_once=true;
+      //      bt_once = false;
+      //      if (SerialBT.begin("The_Rainmaker!")) {
+      //        Serial.println("bt is on!");
+      //
+      //      }
+      //      delay(100);
+      //
+      bt_off_once = true;
 
       ESP.restart();
     }
@@ -433,9 +434,9 @@ void loop() {
     if (all_tasks == 0) {
       fade_leds();
     }
-    else{
-      activated=true;
-      }
+    else {
+      activated = true;
+    }
 
 
 
@@ -491,17 +492,34 @@ void loop() {
         activated = false;
       }
 
-      if ((string.toInt() > 0) && (string.toInt() <= 11))
+      if ((string.toInt() >0) && (string.toInt() <= 11))
       {
+        if (string.toInt() == 11) {
+          all_tasks = 0;
+          activated = false;
+          break_time=0;
+          work_time=0;
 
-        all_tasks = string.toInt();
+          
+          
+          
+          
+          }
+        else {
+          all_tasks = string.toInt();
 
-        Serial.println("alltasks")    ;
-        Serial.println(all_tasks);
+          Serial.println("alltasks");
+          Serial.println(all_tasks);
 
+          if (state == 0) {
 
-        activated = true;
+          set_led_tasks(finished_tasks, all_tasks, vertical_orient);
+          }
 
+          activated = true;
+
+          
+        }
         delay(10);
 
       }
@@ -509,7 +527,7 @@ void loop() {
     }
     if (activated) {
 
-      Serial.println(all_tasks);
+      //Serial.println(all_tasks);
 
       current = map(event.orientation.y, -90, 90, 0, 180);
 

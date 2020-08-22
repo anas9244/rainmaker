@@ -23,6 +23,7 @@ import android.content.Intent;
 import android.os.Handler;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
@@ -54,7 +55,7 @@ public class ledControl extends AppCompatActivity  implements DialogTaskClass.Di
 
     public int task_n = 0;
 
-    Button btnOn, btnOff, btnDis,btnAdd,btnApply, btnRefresh;
+    Button btnOn, btnOff, btnDis,btnAdd;
 
     RecyclerView recyclerView;
     RecyclerAdapter recyclerAdapter;
@@ -98,17 +99,14 @@ public class ledControl extends AppCompatActivity  implements DialogTaskClass.Di
         setContentView(R.layout.activity_led_control);
 
         //call the widgtes
-        btnOn = (Button)findViewById(R.id.button2);
-        btnOff = (Button)findViewById(R.id.button3);
+
         btnDis = (Button)findViewById(R.id.button4);
         btnAdd = (Button)findViewById(R.id.btnAdd);
-        btnApply= (Button)findViewById(R.id.btnApply);
-        btnRefresh= (Button)findViewById(R.id.btnRefresh);
 
-        btnRefresh.setOnClickListener(new View.OnClickListener() {
+        swipeRefreshLayout = (SwipeRefreshLayout) findViewById(R.id.swipeTasks);
+        swipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
-            public void onClick(View v) {
-
+            public void onRefresh() {
                 try {
 
                     btSocket.getOutputStream().write("TN".toString().getBytes());
@@ -144,22 +142,22 @@ public class ledControl extends AppCompatActivity  implements DialogTaskClass.Di
                                         final byte b = packetBytes[i];
 
 
-                                            handler.post(new Runnable()
+                                        handler.post(new Runnable()
+                                        {
+                                            public void run()
                                             {
-                                                public void run()
-                                                {
-                                                    for (int t=0; t< b ;t++){
+                                                for (int t=0; t< b ;t++){
 
-                                                        tasksList.set(t,"done");
-                                                        recyclerAdapter.notifyItemChanged(t);
-
-                                                    }
-
-                                                    //recyclerAdapter.notifyDataSetChanged();
-
+                                                    tasksList.set(t,"done");
+                                                    recyclerAdapter.notifyItemChanged(t);
 
                                                 }
-                                            });
+
+                                                //recyclerAdapter.notifyDataSetChanged();
+
+
+                                            }
+                                        });
 
                                     }
                                 }
@@ -175,58 +173,12 @@ public class ledControl extends AppCompatActivity  implements DialogTaskClass.Di
                 workerThread.start();
 
 
-
-
-
-
-
-
-                //recyclerAdapter.notifyDataSetChanged();
-                //swipeRefreshLayout.setRefreshing(false);
-
-            }
-        });
-
-        swipeRefreshLayout = (SwipeRefreshLayout) findViewById(R.id.swipeTasks);
-        swipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
-            @Override
-            public void onRefresh() {
-                try {
-                    finishedTasks= btSocket.getInputStream().read();
-
-                    msg(String.valueOf(finishedTasks));
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-
-
                 //recyclerAdapter.notifyDataSetChanged();
                 swipeRefreshLayout.setRefreshing(false);
 
             }
         });
-        btnApply.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
 
-
-                if (btSocket!=null)
-                {
-                    try
-                    {
-                        btSocket.getOutputStream().write(String.valueOf(tasksList.size()).getBytes());
-
-                    }
-                    catch (IOException e)
-                    {
-                        msg("Error"+ e);
-                    }
-                }
-
-
-
-            }
-        });
 
         recyclerView = (RecyclerView)findViewById(R.id.recycler);
         recyclerAdapter= new RecyclerAdapter(tasksList);
@@ -242,31 +194,8 @@ public class ledControl extends AppCompatActivity  implements DialogTaskClass.Di
 
         new ConnectBT().execute(); //Call the class to connect
 
-        btnOn.setOnClickListener(new View.OnClickListener()
-        {
-            @Override
-            public void onClick(View v)
-            {
-                turnOnLed();      //method to turn on
-            }
-        });
 
-        btnOff.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v)
-            {
-                turnOffLed();   //method to turn off
-            }
-        });
 
-        btnDis.setOnClickListener(new View.OnClickListener()
-        {
-            @Override
-            public void onClick(View v)
-            {
-                Disconnect(); //close connection
-            }
-        });
 
         btnAdd.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -283,6 +212,7 @@ public class ledControl extends AppCompatActivity  implements DialogTaskClass.Di
 
 
                 dialogTaskClass.show(getSupportFragmentManager(),"example dialog");
+
 
 
 
@@ -346,9 +276,8 @@ public class ledControl extends AppCompatActivity  implements DialogTaskClass.Di
             final int position = viewHolder.getAdapterPosition();
 
             textViewTask = viewHolder.itemView.findViewById(R.id.textViewTask);
-            editTextTask = viewHolder.itemView.findViewById(R.id.edittextTask);
             frameTask = viewHolder.itemView.findViewById(R.id.frameTask);
-            buttonTask = viewHolder.itemView.findViewById(R.id.buttonTask);
+
             imageViewTask = viewHolder.itemView.findViewById(R.id.imageViewTask);
 
             switch (direction) {
@@ -368,7 +297,26 @@ public class ledControl extends AppCompatActivity  implements DialogTaskClass.Di
                         }
                     }).show();
 
+                    if (btSocket!=null)
+                    {
+                        try
+                        {
+                            btSocket.getOutputStream().write(String.valueOf(tasksList.size()).getBytes());
+                            msg(String.valueOf(tasksList.size()));
+
+                        }
+                        catch (IOException e)
+                        {
+                            msg("Error"+ e);
+                        }
+                    }
+
+
+
                     break;
+
+
+
                 case ItemTouchHelper.RIGHT:
 
                     DialogTaskClass dialogTaskClass = new DialogTaskClass();
@@ -379,10 +327,6 @@ public class ledControl extends AppCompatActivity  implements DialogTaskClass.Di
 
                     dialogTaskClass.setArguments(bundle);
                     dialogTaskClass.show(getSupportFragmentManager(),"example dialog");
-
-
-
-
 
 
                     break;
@@ -452,10 +396,23 @@ public class ledControl extends AppCompatActivity  implements DialogTaskClass.Di
             recyclerAdapter.notifyItemChanged(taskId);
         }
         else{
-        tasksList.add(taskName);
+            tasksList.add(taskName);
 
-        //recyclerAdapter.notifyItemInserted(tasksList.size()-1);
-        recyclerAdapter.notifyDataSetChanged();
+            //recyclerAdapter.notifyItemInserted(tasksList.size()-1);
+            recyclerAdapter.notifyDataSetChanged();
+
+            if (btSocket!=null)
+            {
+                try
+                {
+                    btSocket.getOutputStream().write(String.valueOf(tasksList.size()).getBytes());
+
+                }
+                catch (IOException e)
+                {
+                    msg("Error"+ e);
+                }
+            }
 
         }
 

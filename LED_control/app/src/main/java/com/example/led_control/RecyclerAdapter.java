@@ -59,6 +59,7 @@ public class RecyclerAdapter extends RecyclerView.Adapter <RecyclerAdapter.ViewH
 
 
         holder.textViewTask.setText(tasksList.get(position));
+        holder.textViewId.setText(String.valueOf(position+1));
         //holder.editTextTask.requestFocus();
 
 //        if (tasksList.get(position) == "wtf"){
@@ -96,6 +97,8 @@ public class RecyclerAdapter extends RecyclerView.Adapter <RecyclerAdapter.ViewH
         FrameLayout frameTask;
         Button buttonTask;
         ImageView imageViewTask;
+        TextView textViewId;
+
 
 
 
@@ -106,10 +109,11 @@ public class RecyclerAdapter extends RecyclerView.Adapter <RecyclerAdapter.ViewH
 
 
             textViewTask = itemView.findViewById(R.id.textViewTask);
-            editTextTask = itemView.findViewById(R.id.edittextTask);
+            //editTextTask = itemView.findViewById(R.id.edittextTask);
             frameTask = itemView.findViewById(R.id.frameTask);
-            buttonTask = itemView.findViewById(R.id.buttonTask);
             imageViewTask = itemView.findViewById(R.id.imageViewTask);
+            textViewId= itemView.findViewById(R.id.textViewId);
+
 
 
 
@@ -138,56 +142,8 @@ public class RecyclerAdapter extends RecyclerView.Adapter <RecyclerAdapter.ViewH
 
 
 
-            editTextTask.addTextChangedListener(new TextWatcher() {
-                @Override
-                public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-
-                }
-
-                @Override
-                public void onTextChanged(CharSequence s, int start, int before, int count) {
-                    String taskText = editTextTask.getText().toString();
-                    if (!taskText.isEmpty()){
-                        frameTask.setBackgroundColor(Color.parseColor("#1B732A"));
-                        buttonTask.setEnabled(true);
 
 
-                    }
-                    else{
-                        frameTask.setBackgroundColor(Color.parseColor("#BDBDBD"));
-
-                        buttonTask.setEnabled(false);
-
-
-                    }
-                }
-
-                @Override
-                public void afterTextChanged(Editable s) {
-
-
-                }
-            });
-
-            buttonTask.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    editTextTask.setVisibility(View.GONE);
-                    textViewTask.setText(editTextTask.getText().toString());
-                    textViewTask.setVisibility(View.VISIBLE);
-                    buttonTask.setVisibility(View.GONE);
-                    imageViewTask.setVisibility(View.VISIBLE);
-
-                    tasksList.set(getAdapterPosition(), editTextTask.getText().toString());
-
-
-                    frameTask.setBackgroundColor(Color.parseColor("#CFCFCF"));
-
-
-
-
-                }
-            });
 
 
 
