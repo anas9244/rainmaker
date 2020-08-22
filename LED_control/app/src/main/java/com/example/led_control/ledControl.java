@@ -50,7 +50,7 @@ import java.util.UUID;
 import it.xabaras.android.recyclerview.swipedecorator.RecyclerViewSwipeDecorator;
 
 
-public class ledControl extends AppCompatActivity {
+public class ledControl extends AppCompatActivity  implements DialogTaskClass.DialogListener {
 
     public int task_n = 0;
 
@@ -76,6 +76,13 @@ public class ledControl extends AppCompatActivity {
     static final UUID myUUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
 
     int finishedTasks=0;
+
+
+    Thread workerThread;
+    byte[] readBuffer;
+    int readBufferPosition;
+    int counter;
+    volatile boolean stopWorker;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -107,45 +114,71 @@ public class ledControl extends AppCompatActivity {
                     btSocket.getOutputStream().write("TN".toString().getBytes());
 
 
-                    int bytesAvailable = btSocket.getInputStream().available();
-
-                    byte []packetBytes= new byte[bytesAvailable];
-                    if (bytesAvailable > 0) {
-                        //msg(bytesAvailable+ "ok");
-                        btSocket.getInputStream().read(packetBytes);
-
-
-                        for(int i=0; i<bytesAvailable;i++)
-                        {
-
-                            finishedTasks = packetBytes[i];
-                            msg(String.valueOf(packetBytes[i]));
-
-                        }
-
-                    for (int t=0; t< finishedTasks ;t++){
-
-                        tasksList.set(t,"done");
-
-                    }
-
-                    recyclerAdapter.notifyDataSetChanged();
-
-
-
-
-
-
-                    }
-                    else{
-
-                        msg("nothing");
-                    }
-
                 } catch (Exception e) {
                     // ADD THIS TO SEE ANY ERROR
                     e.printStackTrace();
                 }
+
+
+
+                final Handler handler = new Handler();
+                stopWorker = false;
+                readBufferPosition = 0;
+                readBuffer = new byte[1024];
+
+                workerThread = new Thread(new Runnable()
+                {
+                    public void run()
+                    {
+                        while(!Thread.currentThread().isInterrupted() && !stopWorker)
+                        {
+                            try
+                            {
+                                int bytesAvailable = btSocket.getInputStream().available();
+                                if(bytesAvailable > 0)
+                                {
+                                    byte[] packetBytes = new byte[bytesAvailable];
+                                    btSocket.getInputStream().read(packetBytes);
+                                    for(int i=0;i<bytesAvailable;i++)
+                                    {
+                                        final byte b = packetBytes[i];
+
+
+                                            handler.post(new Runnable()
+                                            {
+                                                public void run()
+                                                {
+                                                    for (int t=0; t< b ;t++){
+
+                                                        tasksList.set(t,"done");
+                                                        recyclerAdapter.notifyItemChanged(t);
+
+                                                    }
+
+                                                    //recyclerAdapter.notifyDataSetChanged();
+
+
+                                                }
+                                            });
+
+                                    }
+                                }
+                            }
+                            catch (IOException ex)
+                            {
+                                stopWorker = true;
+                            }
+                        }
+                    }
+                });
+
+                workerThread.start();
+
+
+
+
+
+
 
 
                 //recyclerAdapter.notifyDataSetChanged();
@@ -239,10 +272,23 @@ public class ledControl extends AppCompatActivity {
             @Override
             public void onClick(View v) {
 
-                tasksList.add("wtf");
-                //recyclerAdapter.notifyDataSetChanged();
+                DialogTaskClass dialogTaskClass = new DialogTaskClass();
+                Bundle bundle = new Bundle();
 
-                recyclerAdapter.notifyItemInserted(tasksList.size()-1);
+                //bundle.putString("taskName", textViewTask.getText().toString());
+                bundle.putBoolean("editMode",false);
+                //bundle.putInt("taskId",position);
+
+                dialogTaskClass.setArguments(bundle);
+
+
+                dialogTaskClass.show(getSupportFragmentManager(),"example dialog");
+
+
+
+
+
+                //recyclerAdapter.notifyItemInserted(tasksList.size()-1);
 
 
             }
@@ -325,21 +371,17 @@ public class ledControl extends AppCompatActivity {
                     break;
                 case ItemTouchHelper.RIGHT:
 
+                    DialogTaskClass dialogTaskClass = new DialogTaskClass();
+                    Bundle bundle = new Bundle();
+                    bundle.putString("taskName", textViewTask.getText().toString());
+                    bundle.putBoolean("editMode",true);
+                    bundle.putInt("taskId",position);
+
+                    dialogTaskClass.setArguments(bundle);
+                    dialogTaskClass.show(getSupportFragmentManager(),"example dialog");
 
 
 
-                    editTextTask.setVisibility(View.VISIBLE);
-                    textViewTask.setVisibility(View.GONE);
-                    buttonTask.setVisibility(View.VISIBLE);
-                    imageViewTask.setVisibility(View.GONE);
-
-                    editTextTask.setText(textViewTask.getText());
-
-                    frameTask.setBackgroundColor(Color.parseColor("#1B732A"));
-
-                    tasksList.set(position,textViewTask.getText().toString());
-
-                    recyclerAdapter.notifyDataSetChanged();
 
 
 
@@ -401,7 +443,23 @@ public class ledControl extends AppCompatActivity {
         }
     }
 
+    @Override
+    public void applyText(String taskName, boolean editMode, int taskId) {
 
+        if (editMode){
+
+            tasksList.set(taskId,taskName);
+            recyclerAdapter.notifyItemChanged(taskId);
+        }
+        else{
+        tasksList.add(taskName);
+
+        //recyclerAdapter.notifyItemInserted(tasksList.size()-1);
+        recyclerAdapter.notifyDataSetChanged();
+
+        }
+
+    }
 
 
 
@@ -458,8 +516,8 @@ public class ledControl extends AppCompatActivity {
                 }
 
                 else {
-                Toast.makeText(getApplicationContext(),"Connection Failed. Make sure the rainmaker is on. ",Toast.LENGTH_LONG).show();
-                finish();
+                    Toast.makeText(getApplicationContext(),"Connection Failed. Make sure the rainmaker is on. ",Toast.LENGTH_LONG).show();
+                    finish();
                 }
 
 

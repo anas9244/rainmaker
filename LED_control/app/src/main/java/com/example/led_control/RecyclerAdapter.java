@@ -59,20 +59,20 @@ public class RecyclerAdapter extends RecyclerView.Adapter <RecyclerAdapter.ViewH
 
 
         holder.textViewTask.setText(tasksList.get(position));
-        holder.editTextTask.requestFocus();
+        //holder.editTextTask.requestFocus();
 
-        if (tasksList.get(position) == "wtf"){
-
-        holder.editTextTask.setVisibility(View.VISIBLE);
-        holder.textViewTask.setVisibility(View.GONE);
-        holder.buttonTask.setVisibility(View.VISIBLE);
-        holder.imageViewTask.setVisibility(View.GONE);
-
-        holder.editTextTask.setText("");
-
-        holder.frameTask.setBackgroundColor(Color.parseColor("#BDBDBD"));
-
-        }
+//        if (tasksList.get(position) == "wtf"){
+//
+//        holder.editTextTask.setVisibility(View.VISIBLE);
+//        holder.textViewTask.setVisibility(View.GONE);
+//        holder.buttonTask.setVisibility(View.VISIBLE);
+//        holder.imageViewTask.setVisibility(View.GONE);
+//
+//        holder.editTextTask.setText("");
+//
+//        holder.frameTask.setBackgroundColor(Color.parseColor("#BDBDBD"));
+//
+//        }
 
 
 

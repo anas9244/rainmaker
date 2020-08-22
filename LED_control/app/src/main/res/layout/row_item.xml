@@ -24,7 +24,7 @@
             android:layout_width="40dp"
             android:layout_height="50dp"
             android:layout_gravity="center"
-            android:visibility="gone"
+            android:visibility="visible"
             app:srcCompat="@mipmap/hand" />
 
         <Button
@@ -38,7 +38,8 @@
 
             android:hapticFeedbackEnabled="true"
             android:text="Done"
-            android:textColor="#FFFFFF" />
+            android:textColor="#FFFFFF"
+            android:visibility="gone" />
     </FrameLayout>
 
     <EditText
@@ -53,23 +54,24 @@
         android:imeOptions="actionSend"
         android:inputType="text"
         android:textAlignment="textStart"
-        android:textSize="18sp" />
+        android:textSize="18sp"
+        android:visibility="gone" />
 
 
     <TextView
         android:id="@+id/textViewTask"
         android:layout_width="300dp"
         android:layout_height="90dp"
-        android:gravity="center"
         android:layout_gravity="center"
+        android:layout_marginLeft="20dp"
+        android:gravity="center"
         android:includeFontPadding="false"
         android:paddingStart="16dp"
         android:text="TextView "
         android:textAlignment="textStart"
         android:textSize="18sp"
-        android:visibility="gone"
-        tools:ignore="RtlCompat"
-        android:layout_marginLeft="20dp"/>
+        android:visibility="visible"
+        tools:ignore="RtlCompat" />
 
 
 </LinearLayout>

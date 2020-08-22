@@ -5,6 +5,9 @@
 
 #include "BluetoothSerial.h"
 
+
+#include "esp_deep_sleep.h"
+
 #if !defined(CONFIG_BT_ENABLED) || !defined(CONFIG_BLUEDROID_ENABLED)
 #error Bluetooth is not enabled! Please run `make menuconfig` to and enable it
 #endif
@@ -18,6 +21,8 @@ RTC_DATA_ATTR Adafruit_BNO055 bno = Adafruit_BNO055(55);
 
 #define LED_PIN     15
 #define NUM_LEDS    10
+
+
 
 CRGB leds[NUM_LEDS];
 
@@ -150,15 +155,9 @@ void fade_leds()
 
 
 
-void set_led_tasks(int  tasks, int all_tasks, bool vertical_orient, bool show_bat, int bat_level) {
+void set_led_tasks(int  tasks, int all_tasks, bool vertical_orient) {
 
 
-  if (show_bat) {
-
-    led_bat_lvl(bat_level);
-  }
-
-  else {
     if (vertical_orient == 0) {
 
       for (int i = 0; i <= tasks; i++) {
@@ -193,9 +192,9 @@ void set_led_tasks(int  tasks, int all_tasks, bool vertical_orient, bool show_ba
       }
       FastLED.show();
     }
-  }
+  
 }
-void set_led_ratio(unsigned long break_time, unsigned long work_time, bool show_bat , int bat_level) {
+void set_led_ratio(unsigned long break_time, unsigned long work_time) {
 
   over_all_time = break_time + work_time;
 
@@ -239,9 +238,13 @@ void led_bat_lvl(int bat_lvl) {
 
 
 BluetoothSerial SerialBT;
-
+RTC_NOINIT_ATTR int all_tasks;
 
 void setup() {
+
+  if (all_tasks>10){
+    all_tasks=0;
+    }
 
 
 
@@ -301,11 +304,13 @@ bool activated = false;
 
 char command;
 
-int all_tasks = 0;
+
 
 bool vertical_orient = 0; // 0 for upright, 1 for upsidedown
 
 bool flipped = 0;
+
+
 
 
 int shakes = 0;
@@ -321,28 +326,14 @@ bool toggle_shake = 0;
 
 bool show_bat_lvl = 0;
 
+
+bool bt_once = false;
+
+bool bt_off_once = true;
+
+
+
 void loop() {
-
-  volt = analogRead(voltpin);
-  level = map(volt, 1799, 2383, 0, 10);
-
-  if (volt > last_volt)
-  {
-    action_time_bat = millis();
-
-    if (last_vlt != level) {
-      show_bat_lvl = 1;
-    }
-  }
-  last_vlt = level;
-
-  if (millis() - action_time_bat > 5000 and volt < last_volt) {
-
-    show_bat_lvl = 0;
-  }
-
-  last_volt = volt;
-
 
 
 
@@ -380,7 +371,7 @@ void loop() {
   if  (millis() - shake_time < 400) {
 
     if (shakes == 4)  {
-      delay(500);
+      delay(500); // very important !!!
       shakes = 0;
       if (toggle_shake == 0 ) {
         toggle_shake = 1;
@@ -401,13 +392,50 @@ void loop() {
 
 
   if (toggle_shake) {
+
     leds_off();
+    
+    if (bt_off_once) {
+      bt_off_once=false;
+      SerialBT.flush();
+      if (btStop()) {
+        Serial.println("bt is off!");
+        delay(100);
+      }
+      bt_once = true;
+    }
+
+
+    //Serialbt.flush();
+    
+    
+
+    //    esp_bluedroid_disable();
+    //    esp_bluedroid_deinit();
+    //    esp_bt_controller_disable();
+    //    esp_bt_controller_deinit();
   }
   else {
+
+    if (bt_once) {
+//      bt_once = false;
+//      if (SerialBT.begin("The_Rainmaker!")) {
+//        Serial.println("bt is on!");
+//        
+//      }
+//      delay(100);
+//
+      bt_off_once=true;
+
+      ESP.restart();
+    }
 
     if (all_tasks == 0) {
       fade_leds();
     }
+    else{
+      activated=true;
+      }
 
 
 
@@ -481,6 +509,8 @@ void loop() {
     }
     if (activated) {
 
+      Serial.println(all_tasks);
+
       current = map(event.orientation.y, -90, 90, 0, 180);
 
       if (abs(current - last) > 5) {
@@ -524,7 +554,6 @@ void loop() {
           vertical_orient = 0;
         }
 
-
         if (current > 0 and current < 20) {
 
           Serial.println("work");
@@ -546,19 +575,7 @@ void loop() {
           state = 1;
         }
 
-
-
-        //or (current < 15 and current > 0)){
-
-
-        //        if (state == 1) {
-        //          Serial.println("break");
-        //          work_time += millis() - work_start;
-        //        }
-        //else {
-
         if (state == 0) {
-
           //Serial.println("work");
           work_start = millis();
           break_time += millis() - break_start;
@@ -569,25 +586,22 @@ void loop() {
             finished_tasks++;
           }
 
-
-          set_led_tasks(finished_tasks, all_tasks, vertical_orient, show_bat_lvl, level);
-
-
+          set_led_tasks(finished_tasks, all_tasks, vertical_orient);
         }
 
-        //else if (abs(current - val_start) > 50 ) {
+
         else if (state == 1) {
           //Serial.println("state_change!");
-
-          // if (state == 0) {
-          break_start = millis();
-          //state = 1;
           // Serial.println("break");
+
+          break_start = millis();
+
+
           work_time += millis() - work_start;
 
           //Serial.println(work_time / 1000);
 
-          set_led_ratio(break_time, work_time, show_bat_lvl, level);
+          set_led_ratio(break_time, work_time);
 
 
           // }
