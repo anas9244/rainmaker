@@ -2,22 +2,25 @@ notes:
 
 PRIORITY LIST:
 
-1- checking off finished tasks on app  by swiping down, if not, then just an update button
 2- update finished tasks on app launch too
 
 3- CORRECT WORK/BREAK TIME RATIO !!!!!!!!
 
+4- make add task as floating button
 2- update tasks list on rainmaker after delete on app
 3- update taskss list on rainmaker once updated/add on app (without having to move the rainmaker)
 4- save finished tasks and work-break ratio time for shaking feature
 
 5- keep traking work/break time while turned off
 
-6- fix messed up ordering uopn editing a task
-
 7- Show battery precentage on app
-
 
 8- add a reconnect button in case connection is lost
 
 8- change app theme+ change led colors
+
+9- handle when finshed tasks is more than the shown tasks on app. 
+
+10- check if no connection, then abort deletet/add task 
+
+11- SHOW WORK/BREAK RATIO ON APP

@@ -243,6 +243,8 @@ int all_tasks;
 
 void setup() {
 
+  pinMode(35, INPUT);
+
   if (all_tasks > 10) {
     all_tasks = 0;
   }
@@ -333,6 +335,9 @@ bool bt_once = false;
 bool bt_off_once = true;
 
 
+
+
+int deletedTask;
 
 void loop() {
 
@@ -474,9 +479,28 @@ void loop() {
         activated = true;
       }
 
-      if (string == "TN")
+      if (string == "B")
+
       {
+        volt = analogRead(voltpin);
+        level = map(volt, 1799, 2383, 0, 100);
+        SerialBT.write(level);
+      }
+
+      if (string == "N")
+      {
+        Serial.println("N");
+        //String msg= String ("B"+finished_tasks);
+
+        volt = analogRead(voltpin);
+        level = map(volt, 1799, 2383, 0, 100);
+        //SerialBT.write(level);
+
+        SerialBT.write(level);
+        SerialBT.write('T');
         SerialBT.write(finished_tasks);
+        SerialBT.write('\n');
+        
       }
 
 
@@ -492,19 +516,19 @@ void loop() {
         activated = false;
       }
 
-      if ((string.toInt() >0) && (string.toInt() <= 11))
+      if ((string.toInt() > 0) && (string.toInt() <= 11))
       {
         if (string.toInt() == 11) {
           all_tasks = 0;
           activated = false;
-          break_time=0;
-          work_time=0;
+          break_time = 0;
+          work_time = 0;
 
-          
-          
-          
-          
-          }
+
+
+
+
+        }
         else {
           all_tasks = string.toInt();
 
@@ -513,16 +537,38 @@ void loop() {
 
           if (state == 0) {
 
-          set_led_tasks(finished_tasks, all_tasks, vertical_orient);
+            set_led_tasks(finished_tasks, all_tasks, vertical_orient);
           }
 
           activated = true;
 
-          
+
         }
         delay(10);
 
       }
+      if (string.startsWith("D")) {
+        string.remove(0, 1);
+
+        deletedTask = string.toInt() ;
+
+        Serial.println(deletedTask);
+        if ((deletedTask + 1) <= finished_tasks) {
+          finished_tasks--;
+          all_tasks--;
+        }
+        else {
+          all_tasks--;
+        }
+        delay(10);
+
+        if (state == 0) {
+
+          set_led_tasks(finished_tasks, all_tasks, vertical_orient);
+        }
+        //
+      }
+
 
     }
     if (activated) {

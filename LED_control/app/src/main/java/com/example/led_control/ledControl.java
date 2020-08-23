@@ -55,14 +55,20 @@ public class ledControl extends AppCompatActivity  implements DialogTaskClass.Di
 
     public int task_n = 0;
 
-    Button btnOn, btnOff, btnDis,btnAdd;
+    Button btnOn, btnOff, btnDis,btnAdd,btnBat;
+    TextView textViewBat;
 
     RecyclerView recyclerView;
     RecyclerAdapter recyclerAdapter;
 
+    RecyclerView recyclerViewFinished;
+    RecyclerFinishedAdapter recyclerFinihsedAdapter;
+
     SwipeRefreshLayout swipeRefreshLayout;
 
     List<String> tasksList;
+    List<String> finishedTasksList;
+
 
 
 
@@ -91,6 +97,7 @@ public class ledControl extends AppCompatActivity  implements DialogTaskClass.Di
         setContentView(R.layout.activity_led_control);
 
         tasksList= new ArrayList<>();
+        finishedTasksList= new ArrayList<>();
 
         Intent newint = getIntent();
         //address = newint.getStringExtra(MainActivity.EXTRA_ADDRESS); //receive the address of the bluetooth device
@@ -102,6 +109,89 @@ public class ledControl extends AppCompatActivity  implements DialogTaskClass.Di
 
         btnDis = (Button)findViewById(R.id.button4);
         btnAdd = (Button)findViewById(R.id.btnAdd);
+        btnBat= (Button)findViewById(R.id.btnBat);
+
+        textViewBat= (TextView)findViewById(R.id.textViewBat);
+
+        btnBat.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                try {
+
+                    btSocket.getOutputStream().write("B".toString().getBytes());
+
+
+                } catch (Exception e) {
+                    // ADD THIS TO SEE ANY ERROR
+                    e.printStackTrace();
+                }
+
+
+                final Handler handler = new Handler();
+                stopWorker = false;
+                readBufferPosition = 0;
+                readBuffer = new byte[1024];
+
+                workerThread = new Thread(new Runnable()
+                {
+                    public void run()
+                    {
+                        while(!Thread.currentThread().isInterrupted() && !stopWorker)
+                        {
+                            try
+                            {
+                                int bytesAvailable = btSocket.getInputStream().available();
+                                if(bytesAvailable > 0)
+                                {
+                                    byte[] packetBytes = new byte[bytesAvailable];
+                                    btSocket.getInputStream().read(packetBytes);
+
+                                    for(int i=0;i<bytesAvailable;i++)
+                                    {
+                                        final byte b = packetBytes[i];
+
+                                        if (b=='#'){
+                                            byte[] encodedBytes = new byte[readBufferPosition];
+                                            System.arraycopy(readBuffer, 0, encodedBytes, 0, encodedBytes.length);
+                                            final String data = new String(encodedBytes, "US-ASCII");
+                                            readBufferPosition = 0;
+                                            handler.post(new Runnable()
+                                            {
+                                                public void run()
+                                                {
+
+
+
+
+                                                    textViewBat.setText(String.valueOf(b)+"%");
+                                                    stopWorker=true;
+
+
+                                                }
+                                            });
+
+                                        }
+                                        else{
+
+                                            readBuffer[readBufferPosition++] = b;
+                                        }
+
+                                    }
+                                }
+                            }
+                            catch (IOException ex)
+                            {
+                                stopWorker = true;
+                            }
+                        }
+                    }
+                });
+
+                workerThread.start();
+
+            }
+        });
 
         swipeRefreshLayout = (SwipeRefreshLayout) findViewById(R.id.swipeTasks);
         swipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
@@ -109,7 +199,7 @@ public class ledControl extends AppCompatActivity  implements DialogTaskClass.Di
             public void onRefresh() {
                 try {
 
-                    btSocket.getOutputStream().write("TN".toString().getBytes());
+                    btSocket.getOutputStream().write("N".toString().getBytes());
 
 
                 } catch (Exception e) {
@@ -139,25 +229,74 @@ public class ledControl extends AppCompatActivity  implements DialogTaskClass.Di
                                     btSocket.getInputStream().read(packetBytes);
                                     for(int i=0;i<bytesAvailable;i++)
                                     {
-                                        final byte b = packetBytes[i];
+                                        byte b = packetBytes[i];
+                                        //msg(String.valueOf(b));
 
 
-                                        handler.post(new Runnable()
-                                        {
-                                            public void run()
+                                        if (b=='\n'){
+                                            final byte[] encodedBytes = new byte[readBufferPosition];
+                                            System.arraycopy(readBuffer, 0, encodedBytes, 0, encodedBytes.length);
+                                            //final String data = new String(encodedBytes, "US-ASCII");
+                                            readBufferPosition = 0;
+                                            handler.post(new Runnable()
                                             {
-                                                for (int t=0; t< b ;t++){
+                                                public void run()
+                                                {
+                                                    //msg(data);
 
-                                                    tasksList.set(t,"done");
-                                                    recyclerAdapter.notifyItemChanged(t);
+                                                    //int splitter= data.indexOf('T');
+                                                    //String bat_lvl=data.substring(0,splitter);
+                                                    //String finished_tasks= data.substring(splitter+1);
+
+
+
+                                                    textViewBat.setText(encodedBytes[0]+"%");
+
+                                                    int finihsed_n = encodedBytes[2];
+                                                    int finished_tasks= finihsed_n - finishedTasksList.size();
+                                                    msg(String.valueOf(finihsed_n));
+                                                    msg(String.valueOf(finished_tasks));
+
+
+                                                    if (encodedBytes[2] > finishedTasksList.size())
+                                                    {
+                                                        for (int t=0;t<finished_tasks;t++){
+
+                                                            finishedTasksList.add(tasksList.get(t));
+
+
+                                                        }
+
+                                                        ArrayList<String>
+                                                                arrlist2 = new ArrayList<String>();
+
+                                                        for (int t=0;t<finished_tasks;t++) {
+                                                            arrlist2.add(tasksList.get(t));
+
+                                                        }
+
+
+                                                        tasksList.removeAll(arrlist2);
+
+
+
+
+                                                        recyclerFinihsedAdapter.notifyDataSetChanged();
+                                                        recyclerAdapter.notifyDataSetChanged();
+
+                                                    }
+
+                                                    stopWorker=true;
+
 
                                                 }
+                                            });
 
-                                                //recyclerAdapter.notifyDataSetChanged();
+                                        }
+                                        else{
 
-
-                                            }
-                                        });
+                                            readBuffer[readBufferPosition++] = b;
+                                        }
 
                                     }
                                 }
@@ -188,6 +327,16 @@ public class ledControl extends AppCompatActivity  implements DialogTaskClass.Di
 
         DividerItemDecoration dividerItemDecoration = new DividerItemDecoration(this,DividerItemDecoration.VERTICAL);
         recyclerView.addItemDecoration(dividerItemDecoration);
+
+
+        recyclerViewFinished = (RecyclerView)findViewById(R.id.recyclerFinished);
+        recyclerFinihsedAdapter= new RecyclerFinishedAdapter(finishedTasksList);
+
+        recyclerViewFinished.setLayoutManager(new LinearLayoutManager(this));
+        recyclerViewFinished.setAdapter(recyclerFinihsedAdapter);
+
+        DividerItemDecoration dividerItemDecorationfinished = new DividerItemDecoration(this,DividerItemDecoration.VERTICAL);
+        recyclerViewFinished.addItemDecoration(dividerItemDecorationfinished);
 
 
 
@@ -251,6 +400,8 @@ public class ledControl extends AppCompatActivity  implements DialogTaskClass.Di
 
             recyclerView.getAdapter().notifyItemMoved(fromPosition,toPosition);
 
+            recyclerAdapter.notifyDataSetChanged();
+
 
             return false;
         }
@@ -301,7 +452,8 @@ public class ledControl extends AppCompatActivity  implements DialogTaskClass.Di
                     {
                         try
                         {
-                            btSocket.getOutputStream().write(String.valueOf(tasksList.size()).getBytes());
+                            //btSocket.getOutputStream().write("D".toString().getBytes());
+                            btSocket.getOutputStream().write(String.valueOf("D"+position).getBytes());
                             msg(String.valueOf(tasksList.size()));
 
                         }
@@ -382,6 +534,7 @@ public class ledControl extends AppCompatActivity  implements DialogTaskClass.Di
             }
             catch (IOException e)
             {
+
                 msg("Error");
             }
         }

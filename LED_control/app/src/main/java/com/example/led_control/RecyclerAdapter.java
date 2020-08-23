@@ -5,6 +5,7 @@ package com.example.led_control;
 
 import android.content.Context;
 import android.graphics.Color;
+import android.os.Build;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.KeyEvent;
@@ -21,6 +22,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.List;
@@ -54,8 +56,14 @@ public class RecyclerAdapter extends RecyclerView.Adapter <RecyclerAdapter.ViewH
         return viewHolder;
     }
 
+
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
+
+        String taskName=tasksList.get(position);
+
+
+
 
 
         holder.textViewTask.setText(tasksList.get(position));
