@@ -12,8 +12,6 @@
     android:scrollbars="vertical">
 
 
-
-
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="60dp">
@@ -23,7 +21,14 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="right|center_vertical"
-            android:text="Battery level" />
+            android:text="Reconnect" />
+
+        <Button
+            android:id="@+id/btnReset"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center|center_vertical"
+            android:text="Reset" />
 
         <TextView
             android:id="@+id/textViewBat"
@@ -47,14 +52,16 @@
                 android:visibility="gone" />
 
 
-            <Button
-                android:id="@+id/btnAdd"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Add Task" />
+        <Button
+            android:id="@+id/btnAdd"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Add Task"
+            android:visibility="gone" />
 
 
     </LinearLayout>
+
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerFinished"
@@ -64,28 +71,58 @@
 
     </androidx.recyclerview.widget.RecyclerView>
 
-
     <Space
         android:layout_width="match_parent"
         android:layout_height="50dp" />
-    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
-        android:id="@+id/swipeTasks"
+
+    <RelativeLayout
         android:layout_width="match_parent"
-
-        android:layout_height="match_parent"
-        android:visibility="visible"
-        tools:visibility="visible">
+        android:layout_height="match_parent">
 
 
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/recycler"
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/floatBtn"
+
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+
+            android:layout_alignParentBottom="true"
+            android:layout_gravity="end|bottom"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginBottom="16dp"
+
+            android:background="@android:color/transparent"
+            android:clickable="true"
+            android:focusable="auto"
+            app:srcCompat="@mipmap/add"
+
+            />
+
+        <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+            android:id="@+id/swipeTasks"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:padding="1dp"
-            android:scrollbars="vertical"
 
-            tools:visibility="visible" />
-    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+            android:layout_height="match_parent"
+            android:visibility="visible"
+            tools:visibility="visible">
+
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recycler"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:padding="1dp"
+                android:scrollbars="vertical"
+
+                tools:visibility="visible" />
+
+        </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+
+
+    </RelativeLayout>
 
 
 </LinearLayout>

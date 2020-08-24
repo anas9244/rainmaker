@@ -12,6 +12,7 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import android.bluetooth.le.BluetoothLeScanner;
 import android.bluetooth.le.ScanCallback;
 import android.bluetooth.le.ScanResult;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -38,9 +39,13 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.os.AsyncTask;
 
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.snackbar.Snackbar;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 
 import java.io.IOException;
+import java.lang.reflect.Type;
 import java.nio.file.FileAlreadyExistsException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -51,11 +56,15 @@ import java.util.UUID;
 import it.xabaras.android.recyclerview.swipedecorator.RecyclerViewSwipeDecorator;
 
 
-public class ledControl extends AppCompatActivity  implements DialogTaskClass.DialogListener {
+public class ledControl extends AppCompatActivity implements DialogTaskClass.DialogListener {
 
     public int task_n = 0;
+    public static final String SHARED_PREFS = "sharedPrefs";
 
-    Button btnOn, btnOff, btnDis,btnAdd,btnBat;
+
+    Button btnOn, btnOff, btnDis, btnAdd, btnBat, btnReset;
+    FloatingActionButton floatBtn;
+
     TextView textViewBat;
 
     RecyclerView recyclerView;
@@ -70,11 +79,6 @@ public class ledControl extends AppCompatActivity  implements DialogTaskClass.Di
     List<String> finishedTasksList;
 
 
-
-
-
-
-
     String address = null;
     private ProgressDialog progress;
     BluetoothAdapter myBluetooth = null;
@@ -82,7 +86,7 @@ public class ledControl extends AppCompatActivity  implements DialogTaskClass.Di
     private boolean isBtConnected = false;
     static final UUID myUUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
 
-    int finishedTasks=0;
+    int finishedTasks = 0;
 
 
     Thread workerThread;
@@ -94,10 +98,14 @@ public class ledControl extends AppCompatActivity  implements DialogTaskClass.Di
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+
+
+
         setContentView(R.layout.activity_led_control);
 
-        tasksList= new ArrayList<>();
-        finishedTasksList= new ArrayList<>();
+        //tasksList = new ArrayList<>();
+        //finishedTasksList = new ArrayList<>();
 
         Intent newint = getIntent();
         //address = newint.getStringExtra(MainActivity.EXTRA_ADDRESS); //receive the address of the bluetooth device
@@ -107,88 +115,79 @@ public class ledControl extends AppCompatActivity  implements DialogTaskClass.Di
 
         //call the widgtes
 
-        btnDis = (Button)findViewById(R.id.button4);
-        btnAdd = (Button)findViewById(R.id.btnAdd);
-        btnBat= (Button)findViewById(R.id.btnBat);
+        btnDis = (Button) findViewById(R.id.button4);
+        btnAdd = (Button) findViewById(R.id.btnAdd);
+        btnBat = (Button) findViewById(R.id.btnBat);
+        btnReset = (Button) findViewById(R.id.btnReset);
+        floatBtn = (FloatingActionButton) findViewById(R.id.floatBtn);
 
-        textViewBat= (TextView)findViewById(R.id.textViewBat);
-
-        btnBat.setOnClickListener(new View.OnClickListener() {
+        floatBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
 
+                if ((btSocket.isConnected() && btSocket.getRemoteDevice() != null) && (myBluetooth.isEnabled())) {
+
+                    if (btSocket != null) {
+
+                        try {
+
+                            btSocket.getOutputStream().write(String.valueOf("").getBytes());
+
+                            DialogTaskClass dialogTaskClass = new DialogTaskClass();
+                            Bundle bundle = new Bundle();
+
+                            //bundle.putString("taskName", textViewTask.getText().toString());
+                            bundle.putBoolean("editMode", false);
+                            //bundle.putInt("taskId",position);
+
+                            dialogTaskClass.setArguments(bundle);
+
+
+                            dialogTaskClass.show(getSupportFragmentManager(), "example dialog");
+                        } catch (IOException e) {
+                            msg("Not connected. Please reconnect to apply changes");
+                        }
+                    }
+
+
+                    //recyclerAdapter.notifyItemInserted(tasksList.size()-1);
+
+
+                } else {
+
+                    msg("Not connected. Please reconnect to apply changes");
+                }
+
+            }
+        });
+
+        btnReset.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
                 try {
+                    btSocket.getOutputStream().write(String.valueOf("R").getBytes());
 
-                    btSocket.getOutputStream().write("B".toString().getBytes());
+                    tasksList.clear();
+                    finishedTasksList.clear();
 
-
-                } catch (Exception e) {
-                    // ADD THIS TO SEE ANY ERROR
+                    recyclerAdapter.notifyDataSetChanged();
+                    recyclerFinihsedAdapter.notifyDataSetChanged();
+                } catch (IOException e) {
                     e.printStackTrace();
                 }
 
 
-                final Handler handler = new Handler();
-                stopWorker = false;
-                readBufferPosition = 0;
-                readBuffer = new byte[1024];
+            }
+        });
 
-                workerThread = new Thread(new Runnable()
-                {
-                    public void run()
-                    {
-                        while(!Thread.currentThread().isInterrupted() && !stopWorker)
-                        {
-                            try
-                            {
-                                int bytesAvailable = btSocket.getInputStream().available();
-                                if(bytesAvailable > 0)
-                                {
-                                    byte[] packetBytes = new byte[bytesAvailable];
-                                    btSocket.getInputStream().read(packetBytes);
+        textViewBat = (TextView) findViewById(R.id.textViewBat);
 
-                                    for(int i=0;i<bytesAvailable;i++)
-                                    {
-                                        final byte b = packetBytes[i];
+        btnBat.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                stopWorker = true;
 
-                                        if (b=='#'){
-                                            byte[] encodedBytes = new byte[readBufferPosition];
-                                            System.arraycopy(readBuffer, 0, encodedBytes, 0, encodedBytes.length);
-                                            final String data = new String(encodedBytes, "US-ASCII");
-                                            readBufferPosition = 0;
-                                            handler.post(new Runnable()
-                                            {
-                                                public void run()
-                                                {
-
-
-
-
-                                                    textViewBat.setText(String.valueOf(b)+"%");
-                                                    stopWorker=true;
-
-
-                                                }
-                                            });
-
-                                        }
-                                        else{
-
-                                            readBuffer[readBufferPosition++] = b;
-                                        }
-
-                                    }
-                                }
-                            }
-                            catch (IOException ex)
-                            {
-                                stopWorker = true;
-                            }
-                        }
-                    }
-                });
-
-                workerThread.start();
+                new ConnectBT().execute();
 
             }
         });
@@ -197,146 +196,42 @@ public class ledControl extends AppCompatActivity  implements DialogTaskClass.Di
         swipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
             public void onRefresh() {
-                try {
-
-                    btSocket.getOutputStream().write("N".toString().getBytes());
 
 
-                } catch (Exception e) {
-                    // ADD THIS TO SEE ANY ERROR
-                    e.printStackTrace();
-                }
+                Refresh(true);
+                msg(String.valueOf(finishedTasksList.size()));
 
-
-
-                final Handler handler = new Handler();
-                stopWorker = false;
-                readBufferPosition = 0;
-                readBuffer = new byte[1024];
-
-                workerThread = new Thread(new Runnable()
-                {
-                    public void run()
-                    {
-                        while(!Thread.currentThread().isInterrupted() && !stopWorker)
-                        {
-                            try
-                            {
-                                int bytesAvailable = btSocket.getInputStream().available();
-                                if(bytesAvailable > 0)
-                                {
-                                    byte[] packetBytes = new byte[bytesAvailable];
-                                    btSocket.getInputStream().read(packetBytes);
-                                    for(int i=0;i<bytesAvailable;i++)
-                                    {
-                                        byte b = packetBytes[i];
-                                        //msg(String.valueOf(b));
-
-
-                                        if (b=='\n'){
-                                            final byte[] encodedBytes = new byte[readBufferPosition];
-                                            System.arraycopy(readBuffer, 0, encodedBytes, 0, encodedBytes.length);
-                                            //final String data = new String(encodedBytes, "US-ASCII");
-                                            readBufferPosition = 0;
-                                            handler.post(new Runnable()
-                                            {
-                                                public void run()
-                                                {
-                                                    //msg(data);
-
-                                                    //int splitter= data.indexOf('T');
-                                                    //String bat_lvl=data.substring(0,splitter);
-                                                    //String finished_tasks= data.substring(splitter+1);
-
-
-
-                                                    textViewBat.setText(encodedBytes[0]+"%");
-
-                                                    int finihsed_n = encodedBytes[2];
-                                                    int finished_tasks= finihsed_n - finishedTasksList.size();
-                                                    msg(String.valueOf(finihsed_n));
-                                                    msg(String.valueOf(finished_tasks));
-
-
-                                                    if (encodedBytes[2] > finishedTasksList.size())
-                                                    {
-                                                        for (int t=0;t<finished_tasks;t++){
-
-                                                            finishedTasksList.add(tasksList.get(t));
-
-
-                                                        }
-
-                                                        ArrayList<String>
-                                                                arrlist2 = new ArrayList<String>();
-
-                                                        for (int t=0;t<finished_tasks;t++) {
-                                                            arrlist2.add(tasksList.get(t));
-
-                                                        }
-
-
-                                                        tasksList.removeAll(arrlist2);
-
-
-
-
-                                                        recyclerFinihsedAdapter.notifyDataSetChanged();
-                                                        recyclerAdapter.notifyDataSetChanged();
-
-                                                    }
-
-                                                    stopWorker=true;
-
-
-                                                }
-                                            });
-
-                                        }
-                                        else{
-
-                                            readBuffer[readBufferPosition++] = b;
-                                        }
-
-                                    }
-                                }
-                            }
-                            catch (IOException ex)
-                            {
-                                stopWorker = true;
-                            }
-                        }
-                    }
-                });
-
-                workerThread.start();
-
-
-                //recyclerAdapter.notifyDataSetChanged();
                 swipeRefreshLayout.setRefreshing(false);
 
             }
         });
 
+        getData();
+        recyclerView = (RecyclerView) findViewById(R.id.recycler);
+        recyclerAdapter = new RecyclerAdapter(tasksList);
 
-        recyclerView = (RecyclerView)findViewById(R.id.recycler);
-        recyclerAdapter= new RecyclerAdapter(tasksList);
 
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.setAdapter(recyclerAdapter);
 
-        DividerItemDecoration dividerItemDecoration = new DividerItemDecoration(this,DividerItemDecoration.VERTICAL);
+        DividerItemDecoration dividerItemDecoration = new DividerItemDecoration(this, DividerItemDecoration.VERTICAL);
         recyclerView.addItemDecoration(dividerItemDecoration);
 
+        recyclerAdapter.notifyDataSetChanged();
 
-        recyclerViewFinished = (RecyclerView)findViewById(R.id.recyclerFinished);
-        recyclerFinihsedAdapter= new RecyclerFinishedAdapter(finishedTasksList);
+
+        recyclerViewFinished = (RecyclerView) findViewById(R.id.recyclerFinished);
+        recyclerFinihsedAdapter = new RecyclerFinishedAdapter(finishedTasksList);
+
+
 
         recyclerViewFinished.setLayoutManager(new LinearLayoutManager(this));
         recyclerViewFinished.setAdapter(recyclerFinihsedAdapter);
 
-        DividerItemDecoration dividerItemDecorationfinished = new DividerItemDecoration(this,DividerItemDecoration.VERTICAL);
+        DividerItemDecoration dividerItemDecorationfinished = new DividerItemDecoration(this, DividerItemDecoration.VERTICAL);
         recyclerViewFinished.addItemDecoration(dividerItemDecorationfinished);
+
+        recyclerFinihsedAdapter.notifyDataSetChanged();
 
 
 
@@ -344,44 +239,58 @@ public class ledControl extends AppCompatActivity  implements DialogTaskClass.Di
         new ConnectBT().execute(); //Call the class to connect
 
 
-
-
         btnAdd.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
 
-                DialogTaskClass dialogTaskClass = new DialogTaskClass();
-                Bundle bundle = new Bundle();
 
-                //bundle.putString("taskName", textViewTask.getText().toString());
-                bundle.putBoolean("editMode",false);
-                //bundle.putInt("taskId",position);
+                if ((btSocket.isConnected() && btSocket.getRemoteDevice() != null) && (myBluetooth.isEnabled())) {
 
-                dialogTaskClass.setArguments(bundle);
+                    if (btSocket != null) {
+
+                        try {
+
+                            btSocket.getOutputStream().write(String.valueOf("").getBytes());
+
+                            DialogTaskClass dialogTaskClass = new DialogTaskClass();
+                            Bundle bundle = new Bundle();
+
+                            //bundle.putString("taskName", textViewTask.getText().toString());
+                            bundle.putBoolean("editMode", false);
+                            //bundle.putInt("taskId",position);
+
+                            dialogTaskClass.setArguments(bundle);
 
 
-                dialogTaskClass.show(getSupportFragmentManager(),"example dialog");
+                            dialogTaskClass.show(getSupportFragmentManager(), "example dialog");
+                        } catch (IOException e) {
+                            msg("Not connected. Please reconnect to apply changes");
+                        }
+                    }
 
 
+                    //recyclerAdapter.notifyItemInserted(tasksList.size()-1);
 
 
+                } else {
 
-
-                //recyclerAdapter.notifyItemInserted(tasksList.size()-1);
+                    msg("Not connected. Please reconnect to apply changes");
+                }
 
 
             }
         });
+
+
         ItemTouchHelper itemTouchHelper = new ItemTouchHelper(simpleCallback);
         itemTouchHelper.attachToRecyclerView(recyclerView);
-
 
 
     }
 
     String deletedTask = null;
 
-    ItemTouchHelper.SimpleCallback simpleCallback = new ItemTouchHelper.SimpleCallback(ItemTouchHelper.UP |ItemTouchHelper.DOWN | ItemTouchHelper.START | ItemTouchHelper.END,ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT) {
+    ItemTouchHelper.SimpleCallback simpleCallback = new ItemTouchHelper.SimpleCallback(ItemTouchHelper.UP | ItemTouchHelper.DOWN | ItemTouchHelper.START | ItemTouchHelper.END, ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT) {
         TextView textViewTask;
         EditText editTextTask;
         FrameLayout frameTask;
@@ -396,11 +305,14 @@ public class ledControl extends AppCompatActivity  implements DialogTaskClass.Di
             int fromPosition = viewHolder.getAdapterPosition();
             int toPosition = target.getAdapterPosition();
 
-            Collections.swap(tasksList,fromPosition,toPosition);
+            Collections.swap(tasksList, fromPosition, toPosition);
+            saveData();
 
-            recyclerView.getAdapter().notifyItemMoved(fromPosition,toPosition);
+            recyclerView.getAdapter().notifyItemMoved(fromPosition, toPosition);
 
             recyclerAdapter.notifyDataSetChanged();
+
+
 
 
             return false;
@@ -409,15 +321,14 @@ public class ledControl extends AppCompatActivity  implements DialogTaskClass.Di
         @Override
         public void onChildDraw(@NonNull Canvas c, @NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, float dX, float dY, int actionState, boolean isCurrentlyActive) {
             new RecyclerViewSwipeDecorator.Builder(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive)
-                    .addSwipeLeftBackgroundColor(Color.parseColor("#CC0000"))
+                    .addSwipeLeftBackgroundColor(Color.parseColor("#CC00A0"))
                     .addSwipeLeftActionIcon(R.drawable.ic_baseline_delete_24)
-                    .addSwipeRightBackgroundColor(Color.parseColor("#0000CC"))
+                    .addSwipeRightBackgroundColor(Color.parseColor("#00A0CC"))
                     .addSwipeRightActionIcon(R.drawable.ic_baseline_edit_24)
                     .create()
                     .decorate();
 
             super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive);
-
 
 
         }
@@ -435,38 +346,47 @@ public class ledControl extends AppCompatActivity  implements DialogTaskClass.Di
 
                 case ItemTouchHelper.LEFT:
 
-                    deletedTask= tasksList.get(position);
-                    tasksList.remove(position);
-                    recyclerAdapter.notifyItemRemoved(position);
 
-                    Snackbar.make(recyclerView,deletedTask+" was removed! ",Snackbar.LENGTH_LONG).setAction("Undo", new View.OnClickListener() {
-                        @Override
-                        public void onClick(View v) {
-                            tasksList.add(position,deletedTask);
-                            recyclerAdapter.notifyItemInserted(position);
+                    if ((btSocket.isConnected() && btSocket.getRemoteDevice() != null) && (myBluetooth.isEnabled())) {
+                        if (btSocket != null) {
+                            try {
+                                btSocket.getOutputStream().write(String.valueOf("").getBytes());
 
+                                deletedTask = tasksList.get(position);
+                                tasksList.remove(position);
+                                saveData();
+                                recyclerAdapter.notifyItemRemoved(position);
+
+                                Snackbar.make(recyclerView, deletedTask + " was removed! ", Snackbar.LENGTH_LONG).setAction("Undo", new View.OnClickListener() {
+                                    @Override
+                                    public void onClick(View v) {
+                                        tasksList.add(position, deletedTask);
+                                        recyclerAdapter.notifyItemInserted(position);
+
+                                    }
+                                }).show();
+
+
+                                //btSocket.getOutputStream().write("D".toString().getBytes());
+                                btSocket.getOutputStream().write(String.valueOf("D" + position + finishedTasksList.size()).getBytes());
+                                msg(String.valueOf(tasksList.size()));
+
+
+
+                            } catch (IOException e) {
+
+
+                                msg("Not connected. Please reconnect to apply changes!");
+                                recyclerAdapter.notifyDataSetChanged();
+                            }
                         }
-                    }).show();
-
-                    if (btSocket!=null)
-                    {
-                        try
-                        {
-                            //btSocket.getOutputStream().write("D".toString().getBytes());
-                            btSocket.getOutputStream().write(String.valueOf("D"+position).getBytes());
-                            msg(String.valueOf(tasksList.size()));
-
-                        }
-                        catch (IOException e)
-                        {
-                            msg("Error"+ e);
-                        }
+                    } else {
+                        msg("Not connected. Please reconnect to apply changes!");
+                        recyclerAdapter.notifyDataSetChanged();
                     }
 
 
-
                     break;
-
 
 
                 case ItemTouchHelper.RIGHT:
@@ -474,11 +394,12 @@ public class ledControl extends AppCompatActivity  implements DialogTaskClass.Di
                     DialogTaskClass dialogTaskClass = new DialogTaskClass();
                     Bundle bundle = new Bundle();
                     bundle.putString("taskName", textViewTask.getText().toString());
-                    bundle.putBoolean("editMode",true);
-                    bundle.putInt("taskId",position);
+                    bundle.putBoolean("editMode", true);
+                    bundle.putInt("taskId", position);
 
                     dialogTaskClass.setArguments(bundle);
-                    dialogTaskClass.show(getSupportFragmentManager(),"example dialog");
+                    dialogTaskClass.show(getSupportFragmentManager(), "example dialog");
+
 
 
                     break;
@@ -488,90 +409,168 @@ public class ledControl extends AppCompatActivity  implements DialogTaskClass.Di
         }
     };
 
-    private void msg(String s)
-    {
-        Toast.makeText(getApplicationContext(),s,Toast.LENGTH_SHORT).show();
+    private void msg(String s) {
+        Toast.makeText(getApplicationContext(), s, Toast.LENGTH_SHORT).show();
     }
 
-    private void Disconnect()
-    {
-        if (btSocket!=null) //If the btSocket is busy
+    private void Disconnect() {
+        if (btSocket != null) //If the btSocket is busy
         {
-            try
-            {
+            try {
                 btSocket.close(); //close connection
+            } catch (IOException e) {
+                msg("Error");
             }
-            catch (IOException e)
-            { msg("Error");}
         }
         finish(); //return to the first layout
     }
 
-    private void turnOffLed()
-    {
-        if (btSocket!=null)
-        {
-            try
-            {
-                btSocket.getOutputStream().write("TF".toString().getBytes());
+    private void Refresh(final boolean once) {
 
+        if ((btSocket.isConnected() && btSocket.getRemoteDevice() != null) && (myBluetooth.isEnabled())) {
+            try {
+                if (once) {
+
+                    btSocket.getOutputStream().write("N".toString().getBytes());
+                }
+
+
+                final Handler handler = new Handler();
+                stopWorker = false;
+                readBufferPosition = 0;
+                readBuffer = new byte[1024];
+
+                workerThread = new Thread(new Runnable() {
+                    public void run() {
+                        while (!Thread.currentThread().isInterrupted() && !stopWorker) {
+                            try {
+                                int bytesAvailable = btSocket.getInputStream().available();
+                                if (bytesAvailable > 0) {
+                                    byte[] packetBytes = new byte[bytesAvailable];
+                                    btSocket.getInputStream().read(packetBytes);
+                                    for (int i = 0; i < bytesAvailable; i++) {
+                                        byte b = packetBytes[i];
+                                        //msg(String.valueOf(b));
+
+
+                                        if (b == '\n') {
+                                            final byte[] encodedBytes = new byte[readBufferPosition];
+                                            System.arraycopy(readBuffer, 0, encodedBytes, 0, encodedBytes.length);
+                                            //final String data = new String(encodedBytes, "US-ASCII");
+                                            readBufferPosition = 0;
+                                            handler.post(new Runnable() {
+                                                public void run() {
+                                                    //msg(data);
+
+                                                    //int splitter= data.indexOf('T');
+                                                    //String bat_lvl=data.substring(0,splitter);
+                                                    //String finished_tasks= data.substring(splitter+1);
+
+
+                                                    textViewBat.setText(encodedBytes[0] + "%");
+
+                                                    int finihsed_n = encodedBytes[2];
+                                                    msg(String.valueOf(finihsed_n));
+                                                    int finished_tasks = finihsed_n - finishedTasksList.size();
+
+
+                                                    if (encodedBytes[2] > finishedTasksList.size()) {
+                                                        for (int t = 0; t < finished_tasks; t++) {
+
+                                                            finishedTasksList.add(tasksList.get(t));
+
+                                                        }
+
+                                                        ArrayList<String>
+                                                                arrlist2 = new ArrayList<String>();
+
+                                                        for (int t = 0; t < finished_tasks; t++) {
+                                                            arrlist2.add(tasksList.get(t));
+
+                                                        }
+
+                                                        tasksList.removeAll(arrlist2);
+
+                                                        recyclerFinihsedAdapter.notifyDataSetChanged();
+                                                        recyclerAdapter.notifyDataSetChanged();
+
+                                                        saveData();
+
+                                                    }
+
+                                                    stopWorker = once;
+
+
+                                                }
+                                            });
+
+                                        } else {
+
+                                            readBuffer[readBufferPosition++] = b;
+                                        }
+
+                                    }
+                                }
+                            } catch (IOException ex) {
+                                stopWorker = true;
+                            }
+                        }
+                    }
+                });
+
+                workerThread.start();
+
+            } catch (Exception e) {
+                // ADD THIS TO SEE ANY ERROR
+                msg("Not connected. Please reconnect to refresh!");
             }
-            catch (IOException e)
-            {
-                msg("Error"+ e);
-            }
+
+
+            //recyclerAdapter.notifyDataSetChanged();
+        } else {
+
+            msg("Not connected. Please reconnect to refresh!");
+
+
         }
+
+
     }
 
-
-    private void turnOnLed()
-    {
-        if (btSocket!=null)
-        {
-            try
-            {
-                btSocket.getOutputStream().write("TO".toString().getBytes());
-            }
-            catch (IOException e)
-            {
-
-                msg("Error");
-            }
-        }
-    }
 
     @Override
     public void applyText(String taskName, boolean editMode, int taskId) {
 
-        if (editMode){
 
-            tasksList.set(taskId,taskName);
+        if (editMode) {
+
+            tasksList.set(taskId, taskName);
+            saveData();
             recyclerAdapter.notifyItemChanged(taskId);
-        }
-        else{
-            tasksList.add(taskName);
+        } else {
 
-            //recyclerAdapter.notifyItemInserted(tasksList.size()-1);
-            recyclerAdapter.notifyDataSetChanged();
+            if (btSocket != null) {
+                try {
 
-            if (btSocket!=null)
-            {
-                try
-                {
-                    btSocket.getOutputStream().write(String.valueOf(tasksList.size()).getBytes());
+                    btSocket.getOutputStream().write(String.valueOf("").getBytes());
+                    tasksList.add(taskName);
 
-                }
-                catch (IOException e)
-                {
-                    msg("Error"+ e);
+                    //recyclerAdapter.notifyItemInserted(tasksList.size()-1);
+                    recyclerAdapter.notifyDataSetChanged();
+
+                    saveData();
+
+                    btSocket.getOutputStream().write(String.valueOf(tasksList.size() + finishedTasksList.size()).getBytes());
+
+                } catch (IOException e) {
+                    msg("Not connected. Please reconnect to apply changes!");
                 }
             }
+
 
         }
 
     }
-
-
 
 
     private class ConnectBT extends AsyncTask<Void, Void, Void>  // UI thread
@@ -579,63 +578,60 @@ public class ledControl extends AppCompatActivity  implements DialogTaskClass.Di
         private boolean ConnectSuccess = true; //if it's here, it's almost connected
 
         @Override
-        protected void onPreExecute()
-        {
+        protected void onPreExecute() {
             progress = ProgressDialog.show(ledControl.this, "Connecting...", "Please wait!!!");  //show a progress dialog
         }
 
         @Override
         protected Void doInBackground(Void... devices) //while the progress dialog is shown, the connection is done in background
         {
-            try
-            {
-                if (btSocket == null || !isBtConnected)
-                {
-                    myBluetooth = BluetoothAdapter.getDefaultAdapter();//get the mobile bluetooth device
-                    BluetoothDevice dispositivo = myBluetooth.getRemoteDevice("24:6F:28:80:E4:82");//connects to the device's address and checks if it's available
-                    btSocket = dispositivo.createInsecureRfcommSocketToServiceRecord(myUUID);//create a RFCOMM (SPP) connection
-                    BluetoothAdapter.getDefaultAdapter().cancelDiscovery();
-                    btSocket.connect();//start connection
-                }
-            }
-            catch (IOException e)
-            {
+            try {
+                //if (btSocket == null) {
+                myBluetooth = BluetoothAdapter.getDefaultAdapter();//get the mobile bluetooth device
+                BluetoothDevice dispositivo = myBluetooth.getRemoteDevice("24:6F:28:80:E4:82");//connects to the device's address and checks if it's available
+                btSocket = dispositivo.createInsecureRfcommSocketToServiceRecord(myUUID);//create a RFCOMM (SPP) connection
+                BluetoothAdapter.getDefaultAdapter().cancelDiscovery();
+                btSocket.connect();//start connection
+
+
+                //}
+            } catch (IOException e) {
                 ConnectSuccess = false;//if the try failed, you can check the exception here
             }
             return null;
         }
+
         @Override
         protected void onPostExecute(Void result) //after the doInBackground, it checks if everything went fine
         {
             super.onPostExecute(result);
 
-            if (!ConnectSuccess)
-            {
-
-
+            if (!ConnectSuccess) {
 
                 if (!getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
                     msg("Device not supported!");
-                    finish();
+                    //finish();
                 }
 
                 if (myBluetooth == null || !myBluetooth.isEnabled()) {
                     Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
                     startActivityForResult(enableBtIntent, 1);
 
+                } else {
+                    Toast.makeText(getApplicationContext(), "Connection Failed. Please try again ", Toast.LENGTH_LONG).show();
+                    //finish();
                 }
 
-                else {
-                    Toast.makeText(getApplicationContext(),"Connection Failed. Make sure the rainmaker is on. ",Toast.LENGTH_LONG).show();
-                    finish();
-                }
 
-
-            }
-            else
-            {
+            } else {
                 msg("Connected.");
-                isBtConnected = true;
+                //isBtConnected = true;
+
+                Refresh(true);
+                stopWorker = true;
+
+
+                Refresh(false);
             }
             progress.dismiss();
         }
@@ -645,8 +641,59 @@ public class ledControl extends AppCompatActivity  implements DialogTaskClass.Di
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if(resultCode==RESULT_OK){
-            recreate();
+        if (resultCode == RESULT_OK) {
+            new ConnectBT().execute();
         }
+    }
+
+
+    private void saveData() {
+        SharedPreferences sharedPreferences = getSharedPreferences(SHARED_PREFS, MODE_PRIVATE);
+
+
+        Gson gson = new Gson();
+        String json = gson.toJson(tasksList);
+        String jsonFinished = gson.toJson(finishedTasksList);
+        String bat = textViewBat.getText().toString();
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.putString("Set1", json);
+        editor.putString("Set2", jsonFinished);
+        editor.putString("bat", jsonFinished);
+
+        editor.commit();
+
+    }
+
+    private void getData() {
+        SharedPreferences sharedPreferences = getSharedPreferences(SHARED_PREFS, MODE_PRIVATE);
+        Gson gson = new Gson();
+        String json = sharedPreferences.getString("Set1", null);
+        String jsonFinished = sharedPreferences.getString("Set2", null);
+        String bat = sharedPreferences.getString("bat", "--");
+
+        Type type = new TypeToken<ArrayList<String>>() {
+        }.getType();
+        tasksList = gson.fromJson(json, type);
+        finishedTasksList = gson.fromJson(jsonFinished, type);
+
+        textViewBat.setText(bat+'%');
+
+        if (tasksList == null) {
+            //msg("nothing :(");
+            tasksList = new ArrayList<>();
+
+        }
+        if (finishedTasksList == null) {
+            msg("nothing :(");
+            finishedTasksList = new ArrayList<>();
+
+        }
+
+
+
+
+        //recyclerAdapter.notifyDataSetChanged();}
+
+
     }
 }

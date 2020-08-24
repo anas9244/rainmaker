@@ -297,8 +297,8 @@ int val_start;
 bool state = 0; // 0 for work, 1 for break
 
 
-unsigned long break_time = millis();
-unsigned long work_time = millis();
+unsigned long break_time;
+unsigned long work_time;
 
 unsigned long work_start;
 unsigned long break_start;
@@ -487,6 +487,21 @@ void loop() {
         SerialBT.write(level);
       }
 
+      if (string == "R")
+
+      {
+   
+        finished_tasks=0;
+
+          all_tasks = 0;
+          activated = false;
+          unsigned long break_time;
+          unsigned long work_time;
+        
+      }
+
+      
+
       if (string == "N")
       {
         Serial.println("N");
@@ -535,10 +550,11 @@ void loop() {
           Serial.println("alltasks");
           Serial.println(all_tasks);
 
-          if (state == 0) {
+          //if (state == 0) {
 
-            set_led_tasks(finished_tasks, all_tasks, vertical_orient);
-          }
+          set_led_tasks(finished_tasks, all_tasks, vertical_orient);
+          
+  
 
           activated = true;
 
@@ -553,11 +569,11 @@ void loop() {
         deletedTask = string.toInt() ;
 
         Serial.println(deletedTask);
-        if ((deletedTask + 1) <= finished_tasks) {
-          finished_tasks--;
-          all_tasks--;
-        }
-        else {
+        if ((deletedTask + 1) > finished_tasks) {
+//          finished_tasks--;
+//          all_tasks--;
+//        }
+//        else {
           all_tasks--;
         }
         delay(10);
@@ -647,7 +663,19 @@ void loop() {
           if (flipped) {
             flipped = 0;
             Serial.println("finished_task!!");
-            finished_tasks++;
+            if (finished_tasks<all_tasks){
+            finished_tasks++;}
+
+            volt = analogRead(voltpin);
+        level = map(volt, 1799, 2383, 0, 100);
+        //SerialBT.write(level);
+
+        SerialBT.write(level);
+        SerialBT.write('T');
+        SerialBT.write(finished_tasks);
+        SerialBT.write('\n');
+
+            
           }
 
           set_led_tasks(finished_tasks, all_tasks, vertical_orient);
