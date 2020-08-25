@@ -478,14 +478,14 @@ void loop() {
         Serial.println("ON is sent!!");
         activated = true;
       }
-
-      if (string == "B")
-
-      {
-        volt = analogRead(voltpin);
-        level = map(volt, 1799, 2383, 0, 100);
-        SerialBT.write(level);
-      }
+//
+//      if (string == "B")
+//
+//      {
+//        volt = analogRead(voltpin);
+//        level = map(volt, 1799, 2383, 0, 100);
+//        SerialBT.write(level);
+//      }
 
       if (string == "R")
 
@@ -512,7 +512,7 @@ void loop() {
         //SerialBT.write(level);
 
         SerialBT.write(level);
-        SerialBT.write('T');
+        //SerialBT.write('T');
         SerialBT.write(finished_tasks);
         SerialBT.write('\n');
         
@@ -671,7 +671,7 @@ void loop() {
         //SerialBT.write(level);
 
         SerialBT.write(level);
-        SerialBT.write('T');
+        //SerialBT.write('T');
         SerialBT.write(finished_tasks);
         SerialBT.write('\n');
 

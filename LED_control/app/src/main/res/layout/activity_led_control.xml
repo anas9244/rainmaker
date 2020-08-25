@@ -3,126 +3,133 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:paddingLeft="16dp"
-    android:paddingTop="16dp"
-    android:paddingRight="16dp"
-    android:paddingBottom="16dp"
-    tools:context=".ledControl" android:orientation="vertical"
+    android:isScrollContainer="true"
+    android:orientation="vertical"
 
-    android:scrollbars="vertical">
+    android:scrollbars="vertical"
+    tools:context=".ledControl">
 
 
-    <FrameLayout
-        android:layout_width="match_parent"
-        android:layout_height="60dp">
-
-        <Button
-            android:id="@+id/btnBat"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="right|center_vertical"
-            android:text="Reconnect" />
-
-        <Button
-            android:id="@+id/btnReset"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center|center_vertical"
-            android:text="Reset" />
+    <LinearLayout
+        android:layout_width="409dp"
+        android:layout_height="60dp"
+        android:gravity="right">
 
         <TextView
             android:id="@+id/textViewBat"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="left|center_vertical"
+            android:layout_gravity="center_vertical"
+            android:layout_marginTop="21dp"
+            android:layout_marginEnd="150dp"
+            android:layout_marginBottom="20dp"
+            android:gravity="left"
             android:text="TextView" />
-    </FrameLayout>
-
-    <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical">
-
-
-            <Button
-                android:id="@+id/button4"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Disconnect"
-                android:visibility="gone" />
-
 
         <Button
-            android:id="@+id/btnAdd"
-            android:layout_width="match_parent"
+            android:id="@+id/btnReset"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Add Task"
-            android:visibility="gone" />
+            android:layout_gravity="center_vertical"
+            android:foregroundGravity="right"
+            android:text="Reset" />
 
+        <Button
+            android:id="@+id/btnBat"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:text="Reconnect" />
 
     </LinearLayout>
 
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/recyclerFinished"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content">
-
-
-    </androidx.recyclerview.widget.RecyclerView>
-
-    <Space
-        android:layout_width="match_parent"
-        android:layout_height="50dp" />
-
     <RelativeLayout
+        android:id="@+id/relativeLayout"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/floatBtn"
-
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignParentEnd="true"
-
-            android:layout_alignParentBottom="true"
-            android:layout_gravity="end|bottom"
-            android:layout_marginStart="16dp"
-            android:layout_marginTop="16dp"
-            android:layout_marginEnd="16dp"
-            android:layout_marginBottom="16dp"
-
-            android:background="@android:color/transparent"
-            android:clickable="true"
-            android:focusable="auto"
-            app:srcCompat="@mipmap/add"
-
-            />
-
-        <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
-            android:id="@+id/swipeTasks"
+        <LinearLayout
             android:layout_width="match_parent"
-
             android:layout_height="match_parent"
-            android:visibility="visible"
-            tools:visibility="visible">
+            android:orientation="vertical">
 
 
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/recycler"
+            <ScrollView
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:padding="1dp"
-                android:scrollbars="vertical"
+                android:layout_height="wrap_content">
 
-                tools:visibility="visible" />
+                <RelativeLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent">
 
-        </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
+                    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+                        android:id="@+id/swipeTasks"
+                        android:layout_width="match_parent"
+
+                        android:layout_height="match_parent"
+                        android:visibility="gone"
+                        tools:visibility="visible">
+
+
+                    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:orientation="vertical">
+
+                        <androidx.recyclerview.widget.RecyclerView
+                            android:id="@+id/recyclerFinished"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:foregroundGravity="top">
+
+
+                        </androidx.recyclerview.widget.RecyclerView>
+
+                        <androidx.recyclerview.widget.RecyclerView
+                            android:id="@+id/recycler"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:foregroundGravity="bottom"
+
+                            android:scrollbars="none"
+                            tools:visibility="visible" />
+                    </LinearLayout>
+
+
+                </RelativeLayout>
+            </ScrollView>
+        </LinearLayout>
+
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="bottom|right">
+
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/floatBtn"
+
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+
+                android:layout_gravity="bottom|end"
+                android:layout_marginStart="30dp"
+                android:layout_marginTop="30dp"
+                android:layout_marginEnd="30dp"
+
+
+                android:layout_marginBottom="30dp"
+                android:background="@android:color/transparent"
+                android:clickable="true"
+                android:focusable="auto"
+
+                app:srcCompat="@mipmap/add" />
+
+        </LinearLayout>
 
     </RelativeLayout>
-
-
 </LinearLayout>
