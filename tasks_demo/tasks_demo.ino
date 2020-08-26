@@ -42,7 +42,7 @@ bool led_mode = 0 ;// 0 for tasks, 1 for breat/time
 
 long work_leds;
 int break_leds = 5;
-float over_all_time;
+unsigned long over_all_time;
 
 
 int voltpin = 35;

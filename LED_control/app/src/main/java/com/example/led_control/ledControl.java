@@ -62,7 +62,6 @@ import it.xabaras.android.recyclerview.swipedecorator.RecyclerViewSwipeDecorator
 public class ledControl extends AppCompatActivity implements DialogTaskClass.DialogListener {
 
 
-
     public int task_n = 0;
     public static final String SHARED_PREFS = "sharedPrefs";
 
@@ -78,7 +77,7 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
     RecyclerView recyclerViewFinished;
     RecyclerFinishedAdapter recyclerFinihsedAdapter;
 
-    SwipeRefreshLayout swipeRefreshLayout,swipeRefreshLayoutFinished;
+    SwipeRefreshLayout swipeRefreshLayout, swipeRefreshLayoutFinished;
 
     ImageView imageViewBat;
 
@@ -127,8 +126,8 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
         //call the widgtes
 
 
-        imageViewBat = (ImageView)findViewById(R.id.imageViewBat);
-        textViewTitle= (TextView) findViewById(R.id.textViewTitle);
+        imageViewBat = (ImageView) findViewById(R.id.imageViewBat);
+        textViewTitle = (TextView) findViewById(R.id.textViewTitle);
 
         btnBat = (Button) findViewById(R.id.btnBat);
         btnReset = (Button) findViewById(R.id.btnReset);
@@ -137,10 +136,10 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
         floatBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                if (btSocket != null) {
 
-                if ((btSocket.isConnected() && btSocket.getRemoteDevice() != null) && (myBluetooth.isEnabled())) {
+                    if (btSocket.isConnected() && (myBluetooth.isEnabled())) {
 
-                    if (btSocket != null) {
 
                         try {
 
@@ -162,16 +161,19 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
                         } catch (IOException e) {
                             msg("Not connected. Please press Reconnect and try again");
                         }
+
+
+                        //recyclerAdapter.notifyItemInserted(tasksList.size()-1);
+
+
+                    } else {
+
+                        msg("Not connected. Please press Reconnect and try again");
                     }
-
-
-                    //recyclerAdapter.notifyItemInserted(tasksList.size()-1);
-
-
                 } else {
-
                     msg("Not connected. Please press Reconnect and try again");
                 }
+
 
             }
         });
@@ -179,12 +181,14 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
         btnReset.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                if (btSocket!=null) {
 
-                if ((btSocket.isConnected() && btSocket.getRemoteDevice() != null) && (myBluetooth.isEnabled())) {
-                    if (btSocket != null) {
+                    if (btSocket.isConnected() && myBluetooth.isEnabled()) {
+
                         try {
 
                             btSocket.getOutputStream().write(String.valueOf("R").getBytes());
+
 
                             tasksList.clear();
                             finishedTasksList.clear();
@@ -198,8 +202,12 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
                         }
 
 
+                    } else {
+
+                        msg("Not connected. Please press Reconnect and try again");
                     }
-                } else {
+                }
+                else{
 
                     msg("Not connected. Please press Reconnect and try again");
                 }
@@ -238,9 +246,6 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
         });
 
 
-
-
-
         getData();
         recyclerView = (RecyclerView) findViewById(R.id.recycler);
         recyclerAdapter = new RecyclerAdapter(tasksList);
@@ -252,11 +257,6 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
         recyclerAdapter.notifyDataSetChanged();
 
         //recyclerView.setNestedScrollingEnabled(false);
-
-
-
-
-
 
 
         recyclerViewFinished = (RecyclerView) findViewById(R.id.recyclerFinished);
@@ -293,8 +293,6 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
         private final ColorDrawable background = new ColorDrawable(Color.parseColor("#00ff00"));
 
 
-
-
         @Override
         public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, @NonNull RecyclerView.ViewHolder target) {
             int fromPosition = viewHolder.getAdapterPosition();
@@ -326,7 +324,6 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
             //swipeRefreshLayout.setEnabled(false);
 
 
-
         }
 
         @Override
@@ -341,14 +338,13 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
             frameTask = viewHolder.itemView.findViewById(R.id.frameTask);
 
 
-
             switch (direction) {
 
                 case ItemTouchHelper.LEFT:
 
+                    if (btSocket != null) {
+                        if ((btSocket.isConnected()) && (myBluetooth.isEnabled())) {
 
-                    if ((btSocket.isConnected() && btSocket.getRemoteDevice() != null) && (myBluetooth.isEnabled())) {
-                        if (btSocket != null) {
                             try {
                                 btSocket.getOutputStream().write(String.valueOf("").getBytes());
 
@@ -378,11 +374,18 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
                                 msg("Not connected. Please press Reconnect and try again");
                                 recyclerAdapter.notifyDataSetChanged();
                             }
-                        }
+
                     } else {
                         msg("Not connected. Please press Reconnect and try again");
                         recyclerAdapter.notifyDataSetChanged();
                     }
+                    }
+                    else{
+
+                        msg("Not connected. Please press Reconnect and try again");
+                        recyclerAdapter.notifyDataSetChanged();
+                    }
+
 
 
                     break;
@@ -424,154 +427,161 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
     }
 
     private void Refresh(final boolean once) {
+        if (btSocket!=null) {
 
-        if ((btSocket.isConnected() && btSocket.getRemoteDevice() != null) && (myBluetooth.isEnabled())) {
-            try {
-                if (once) {
+            if (btSocket.isConnected() && (myBluetooth.isEnabled())) {
+                try {
+                    if (once) {
 
-                    btSocket.getOutputStream().write("N".toString().getBytes());
+                        btSocket.getOutputStream().write("N".toString().getBytes());
+                    }
+
+
+                    final Handler handler = new Handler();
+                    stopWorker = false;
+                    readBufferPosition = 0;
+                    readBuffer = new byte[1024];
+
+                    workerThread = new Thread(new Runnable() {
+                        public void run() {
+                            while (!Thread.currentThread().isInterrupted() && !stopWorker) {
+                                if (!isBtConnected) {
+
+                                    textViewTitle.setText("Not connected!");
+                                }
+                                try {
+                                    int bytesAvailable = btSocket.getInputStream().available();
+                                    if (bytesAvailable > 0) {
+                                        byte[] packetBytes = new byte[bytesAvailable];
+                                        btSocket.getInputStream().read(packetBytes);
+                                        for (int i = 0; i < bytesAvailable; i++) {
+                                            byte b = packetBytes[i];
+                                            //msg(String.valueOf(b));
+
+
+                                            if (b == '\n') {
+                                                final byte[] encodedBytes = new byte[readBufferPosition];
+                                                System.arraycopy(readBuffer, 0, encodedBytes, 0, encodedBytes.length);
+                                                //final String data = new String(encodedBytes, "US-ASCII");
+                                                readBufferPosition = 0;
+                                                handler.post(new Runnable() {
+                                                    public void run() {
+
+                                                        if (encodedBytes.length != 1) {
+                                                            //msg(data);
+
+                                                            //int splitter= data.indexOf('T');
+                                                            //String bat_lvl=data.substring(0,splitter);
+                                                            //String finished_tasks= data.substring(splitter+1);
+                                                            int batLvl = encodedBytes[0];
+
+                                                            if (batLvl > 100) {
+
+                                                                batLvl = 100;
+                                                            }
+
+                                                            if (encodedBytes[0] < 0) {
+
+                                                                batLvl = 0;
+                                                            }
+
+                                                            if (batLvl < 100 && batLvl > 70) {
+
+                                                                imageViewBat.setImageResource(R.mipmap.bat_full);
+
+                                                                imageViewBat.setTag(R.mipmap.bat_full);
+                                                            }
+
+                                                            if (batLvl < 70 && batLvl > 50) {
+
+                                                                imageViewBat.setImageResource(R.mipmap.bat_mid2);
+                                                                imageViewBat.setTag(R.mipmap.bat_mid2);
+                                                            }
+
+                                                            if (batLvl < 50 && batLvl > 30) {
+
+                                                                imageViewBat.setImageResource(R.mipmap.bat_mid1);
+                                                                imageViewBat.setTag(R.mipmap.bat_mid1);
+                                                            }
+
+                                                            if (batLvl < 30 && batLvl > 0) {
+
+                                                                imageViewBat.setImageResource(R.mipmap.bat_low);
+                                                                imageViewBat.setTag(R.mipmap.bat_low);
+                                                            }
+
+
+                                                            textViewBat.setText(batLvl + "%");
+
+                                                            int finihsed_n = encodedBytes[1];
+                                                            //msg(String.valueOf(finihsed_n));
+                                                            int finished_tasks = finihsed_n - finishedTasksList.size();
+
+
+                                                            if (finihsed_n > finishedTasksList.size()) {
+                                                                for (int f = 0; f < finished_tasks; f++) {
+
+                                                                    finishedTasksList.add(tasksList.get(f));
+
+                                                                }
+
+                                                                ArrayList<String>
+                                                                        arrlist2 = new ArrayList<String>();
+
+                                                                for (int t = 0; t < finished_tasks; t++) {
+                                                                    arrlist2.add(tasksList.get(t));
+
+                                                                }
+
+                                                                tasksList.removeAll(arrlist2);
+
+                                                                recyclerFinihsedAdapter.notifyDataSetChanged();
+                                                                recyclerAdapter.notifyDataSetChanged();
+
+                                                                saveData();
+
+                                                            }
+
+                                                        }
+
+                                                        stopWorker = once;
+
+
+                                                    }
+                                                });
+
+                                            } else {
+
+                                                readBuffer[readBufferPosition++] = b;
+                                            }
+
+                                        }
+                                    }
+                                } catch (IOException ex) {
+                                    stopWorker = true;
+                                }
+                            }
+                        }
+                    });
+
+                    workerThread.start();
+
+                } catch (Exception e) {
+                    // ADD THIS TO SEE ANY ERROR
+                    msg("Not connected. Please press Reconnect and try again");
                 }
 
 
-                final Handler handler = new Handler();
-                stopWorker = false;
-                readBufferPosition = 0;
-                readBuffer = new byte[1024];
+                //recyclerAdapter.notifyDataSetChanged();
+            } else {
 
-                workerThread = new Thread(new Runnable() {
-                    public void run() {
-                        while (!Thread.currentThread().isInterrupted() && !stopWorker) {
-                            if (!isBtConnected){
-                                textViewTitle.setText("Not connected!");
-                            }
-                            try {
-                                int bytesAvailable = btSocket.getInputStream().available();
-                                if (bytesAvailable > 0) {
-                                    byte[] packetBytes = new byte[bytesAvailable];
-                                    btSocket.getInputStream().read(packetBytes);
-                                    for (int i = 0; i < bytesAvailable; i++) {
-                                        byte b = packetBytes[i];
-                                        //msg(String.valueOf(b));
-
-
-                                        if (b == '\n') {
-                                            final byte[] encodedBytes = new byte[readBufferPosition];
-                                            System.arraycopy(readBuffer, 0, encodedBytes, 0, encodedBytes.length);
-                                            //final String data = new String(encodedBytes, "US-ASCII");
-                                            readBufferPosition = 0;
-                                            handler.post(new Runnable() {
-                                                public void run() {
-
-                                                    if (encodedBytes.length !=1) {
-                                                        //msg(data);
-
-                                                        //int splitter= data.indexOf('T');
-                                                        //String bat_lvl=data.substring(0,splitter);
-                                                        //String finished_tasks= data.substring(splitter+1);
-                                                        int batLvl = encodedBytes[0];
-
-                                                        if (batLvl > 100) {
-
-                                                            batLvl = 100;
-                                                        }
-
-                                                        if (encodedBytes[0] < 0) {
-
-                                                            batLvl = 0;
-                                                        }
-
-                                                        if (batLvl < 100 && batLvl > 70) {
-
-                                                            imageViewBat.setImageResource(R.mipmap.bat_full);
-
-                                                            imageViewBat.setTag(R.mipmap.bat_full);
-                                                        }
-
-                                                        if (batLvl < 70 && batLvl > 50) {
-
-                                                            imageViewBat.setImageResource(R.mipmap.bat_mid2);
-                                                            imageViewBat.setTag(R.mipmap.bat_mid2);
-                                                        }
-
-                                                        if (batLvl < 50 && batLvl > 30) {
-
-                                                            imageViewBat.setImageResource(R.mipmap.bat_mid1);
-                                                            imageViewBat.setTag(R.mipmap.bat_mid1);
-                                                        }
-
-                                                        if (batLvl < 30 && batLvl > 0) {
-
-                                                            imageViewBat.setImageResource(R.mipmap.bat_low);
-                                                            imageViewBat.setTag(R.mipmap.bat_low);
-                                                        }
-
-
-                                                        textViewBat.setText(batLvl + "%");
-
-                                                        int finihsed_n = encodedBytes[1];
-                                                        //msg(String.valueOf(finihsed_n));
-                                                        int finished_tasks = finihsed_n - finishedTasksList.size();
-
-
-                                                        if (finihsed_n > finishedTasksList.size()) {
-                                                            for (int f = 0; f < finished_tasks; f++) {
-
-                                                                finishedTasksList.add(tasksList.get(f));
-
-                                                            }
-
-                                                            ArrayList<String>
-                                                                    arrlist2 = new ArrayList<String>();
-
-                                                            for (int t = 0; t < finished_tasks; t++) {
-                                                                arrlist2.add(tasksList.get(t));
-
-                                                            }
-
-                                                            tasksList.removeAll(arrlist2);
-
-                                                            recyclerFinihsedAdapter.notifyDataSetChanged();
-                                                            recyclerAdapter.notifyDataSetChanged();
-
-                                                            saveData();
-
-                                                        }
-
-                                                    }
-
-                                                    stopWorker = once;
-
-
-                                                }
-                                            });
-
-                                        } else {
-
-                                            readBuffer[readBufferPosition++] = b;
-                                        }
-
-                                    }
-                                }
-                            } catch (IOException ex) {
-                                stopWorker = true;
-                            }
-                        }
-                    }
-                });
-
-                workerThread.start();
-
-            } catch (Exception e) {
-                // ADD THIS TO SEE ANY ERROR
                 msg("Not connected. Please press Reconnect and try again");
+
+
             }
-
-
-            //recyclerAdapter.notifyDataSetChanged();
-        } else {
-
+        }
+        else{
             msg("Not connected. Please press Reconnect and try again");
-
 
         }
 
@@ -589,23 +599,29 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
             saveData();
             recyclerAdapter.notifyItemChanged(taskId);
         } else {
+            if (btSocket!=null) {
 
-            if (btSocket != null) {
-                try {
+                if (btSocket.isConnected()) {
+                    try {
 
-                    btSocket.getOutputStream().write(String.valueOf("").getBytes());
-                    tasksList.add(taskName);
+                        btSocket.getOutputStream().write(String.valueOf("").getBytes());
+                        tasksList.add(taskName);
 
-                    //recyclerAdapter.notifyItemInserted(tasksList.size()-1);
-                    recyclerAdapter.notifyDataSetChanged();
+                        //recyclerAdapter.notifyItemInserted(tasksList.size()-1);
+                        recyclerAdapter.notifyDataSetChanged();
 
-                    saveData();
+                        saveData();
 
-                    btSocket.getOutputStream().write(String.valueOf(tasksList.size() + finishedTasksList.size()).getBytes());
+                        btSocket.getOutputStream().write(String.valueOf(tasksList.size() + finishedTasksList.size()).getBytes());
 
-                } catch (IOException e) {
-                    msg("Not connected. Please press Reconnect and try again");
+                    } catch (IOException e) {
+                        msg("Not connected. Please press Reconnect and try again");
+                    }
                 }
+            }
+            else{
+                msg("Not connected. Please press Reconnect and try again");
+
             }
 
 
@@ -664,9 +680,14 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
                     //Toast.makeText(getApplicationContext(), "Connection Failed. Please try again ", Toast.LENGTH_LONG).show();
                     //finish();
 
+
                     new ConnectBT().execute();
                     isBtConnected = false;
-
+                    try {
+                        btSocket.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
 
 
                 }
@@ -684,7 +705,6 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
 
             }
             progress.dismiss();
-
 
 
         }
@@ -752,7 +772,6 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
 
 
     }
-
 
 
 }
