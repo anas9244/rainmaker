@@ -4,13 +4,16 @@ import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.os.Bundle;
+import android.text.Editable;
 import android.text.TextUtils;
+import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EdgeEffect;
 import android.widget.EditText;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -31,7 +34,7 @@ public class DialogTaskClass extends AppCompatDialogFragment {
         LayoutInflater inflater =getActivity().getLayoutInflater();
         View view = inflater.inflate(R.layout.layout_task_dialog,null);
 
-        builder.setView(view).setTitle("Task Info").setPositiveButton("Done", new DialogInterface.OnClickListener() {
+        builder.setView(view).setTitle("Task Name").setPositiveButton("Done", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 InputMethodManager inputMethodManager = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
@@ -40,7 +43,19 @@ public class DialogTaskClass extends AppCompatDialogFragment {
 
                 String taskName = edit_task.getText().toString();
 
-                listener.applyText(taskName,getArguments().getBoolean("editMode"),getArguments().getInt("taskId"));
+                if (!TextUtils.isEmpty(taskName)) {
+
+
+                    listener.applyText(taskName, getArguments().getBoolean("editMode"), getArguments().getInt("taskId"));
+
+
+                }
+                else {
+
+                    Toast.makeText(getContext(), "Please enter task name first.", Toast.LENGTH_SHORT).show();
+
+                }
+
 
             }
         });
@@ -73,6 +88,7 @@ public class DialogTaskClass extends AppCompatDialogFragment {
 
         try {
             listener = (DialogListener) context;
+
         }catch (ClassCastException e){
             throw  new ClassCastException(context.toString()+ "must implement DialogListener");
 

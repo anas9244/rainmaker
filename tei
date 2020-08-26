@@ -10,29 +10,23 @@ PRIORITY LIST:
 8- add a reconnect button in case connection is lost
 9- handle when finshed tasks is more than the shown tasks on app. 
 14- add a reset button on app
+15 - CHECK FOR CONNECTION FOR RESET BUTTON
+
+
 
 1111-- KEEP BLEUTOOTH CONNECTION IN BACKROUNG!!
 
-2222 - CHECK FOR CONNECTION FOR RESET BUTTON
+2222- IMPLEMENT LOGGING FEATURE FOR USER USAGE STATISTICS
 
 3- CORRECT WORK/BREAK TIME RATIO !!!!!!!!
-
 
 4- save finished tasks and work-break ratio time for shaking feature
 
 5- keep traking work/break time while turned off
 
-
-
-
-
 8- change app theme+ change led colors
 
-
-
-
 11- SHOW WORK/BREAK RATIO ON APP
-
 
 13-  Save variables states in memory for rainmaker and app
 

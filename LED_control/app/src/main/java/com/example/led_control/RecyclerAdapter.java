@@ -119,7 +119,7 @@ public class RecyclerAdapter extends RecyclerView.Adapter <RecyclerAdapter.ViewH
             textViewTask = itemView.findViewById(R.id.textViewTask);
             //editTextTask = itemView.findViewById(R.id.edittextTask);
             frameTask = itemView.findViewById(R.id.frameTask);
-            imageViewTask = itemView.findViewById(R.id.imageViewTask);
+
             textViewId= itemView.findViewById(R.id.textViewId);
 
 

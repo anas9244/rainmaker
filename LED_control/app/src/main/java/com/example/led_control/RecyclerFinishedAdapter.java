@@ -35,7 +35,7 @@ public class RecyclerFinishedAdapter extends RecyclerView.Adapter <RecyclerFinis
     public void onBindViewHolder(@NonNull RecyclerFinishedAdapter.ViewHolder holder, int position) {
 
         holder.textViewTaskFinished.setText(finishedTasksList.get(position));
-        holder.textViewIdFinished.setText(String.valueOf(position+1));
+        //holder.textViewIdFinished.setText(String.valueOf(position+1));
 
     }
 

@@ -3,6 +3,7 @@ package com.example.led_control;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
+import androidx.core.content.res.ResourcesCompat;
 import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -23,6 +24,7 @@ import android.os.Bundle;
 import android.bluetooth.BluetoothSocket;
 import android.content.Intent;
 import android.os.Handler;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
@@ -59,6 +61,8 @@ import it.xabaras.android.recyclerview.swipedecorator.RecyclerViewSwipeDecorator
 
 public class ledControl extends AppCompatActivity implements DialogTaskClass.DialogListener {
 
+
+
     public int task_n = 0;
     public static final String SHARED_PREFS = "sharedPrefs";
 
@@ -74,7 +78,11 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
     RecyclerView recyclerViewFinished;
     RecyclerFinishedAdapter recyclerFinihsedAdapter;
 
-    SwipeRefreshLayout swipeRefreshLayout;
+    SwipeRefreshLayout swipeRefreshLayout,swipeRefreshLayoutFinished;
+
+    ImageView imageViewBat;
+
+    TextView textViewTitle;
 
     List<String> tasksList;
     List<String> finishedTasksList;
@@ -100,13 +108,17 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+//        requestWindowFeature(getWindow().FEATURE_NO_TITLE);
+//
+//        getSupportActionBar().hide();
+
 
         setContentView(R.layout.activity_led_control);
 
         //tasksList = new ArrayList<>();
         //finishedTasksList = new ArrayList<>();
 
-        Intent newint = getIntent();
+        //Intent newint = getIntent();
         //address = newint.getStringExtra(MainActivity.EXTRA_ADDRESS); //receive the address of the bluetooth device
 
         //view of the ledControl
@@ -114,6 +126,9 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
 
         //call the widgtes
 
+
+        imageViewBat = (ImageView)findViewById(R.id.imageViewBat);
+        textViewTitle= (TextView) findViewById(R.id.textViewTitle);
 
         btnBat = (Button) findViewById(R.id.btnBat);
         btnReset = (Button) findViewById(R.id.btnReset);
@@ -142,8 +157,10 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
 
 
                             dialogTaskClass.show(getSupportFragmentManager(), "example dialog");
+
+
                         } catch (IOException e) {
-                            msg("Not connected. Please reconnect to apply changes");
+                            msg("Not connected. Please press Reconnect and try again");
                         }
                     }
 
@@ -153,7 +170,7 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
 
                 } else {
 
-                    msg("Not connected. Please reconnect to apply changes");
+                    msg("Not connected. Please press Reconnect and try again");
                 }
 
             }
@@ -167,7 +184,6 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
                     if (btSocket != null) {
                         try {
 
-
                             btSocket.getOutputStream().write(String.valueOf("R").getBytes());
 
                             tasksList.clear();
@@ -175,15 +191,17 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
 
                             recyclerAdapter.notifyDataSetChanged();
                             recyclerFinihsedAdapter.notifyDataSetChanged();
+
+                            saveData();
                         } catch (IOException e) {
-                            msg("Not connected. Please reconnect to apply changes");
+                            msg("Not connected. Please press Reconnect and try again");
                         }
 
 
                     }
                 } else {
 
-                    msg("Not connected. Please reconnect to apply changes");
+                    msg("Not connected. Please press Reconnect and try again");
                 }
             }
 
@@ -219,6 +237,10 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
             }
         });
 
+
+
+
+
         getData();
         recyclerView = (RecyclerView) findViewById(R.id.recycler);
         recyclerAdapter = new RecyclerAdapter(tasksList);
@@ -227,12 +249,14 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.setAdapter(recyclerAdapter);
 
-        DividerItemDecoration dividerItemDecoration = new DividerItemDecoration(this, DividerItemDecoration.VERTICAL);
-        recyclerView.addItemDecoration(dividerItemDecoration);
-
         recyclerAdapter.notifyDataSetChanged();
 
-        recyclerView.setNestedScrollingEnabled(false);
+        //recyclerView.setNestedScrollingEnabled(false);
+
+
+
+
+
 
 
         recyclerViewFinished = (RecyclerView) findViewById(R.id.recyclerFinished);
@@ -242,16 +266,13 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
         recyclerViewFinished.setLayoutManager(new LinearLayoutManager(this));
         recyclerViewFinished.setAdapter(recyclerFinihsedAdapter);
 
-        DividerItemDecoration dividerItemDecorationfinished = new DividerItemDecoration(this, DividerItemDecoration.VERTICAL);
-        recyclerViewFinished.addItemDecoration(dividerItemDecorationfinished);
 
         recyclerFinihsedAdapter.notifyDataSetChanged();
 
-        recyclerViewFinished.setNestedScrollingEnabled(false);
+        //recyclerViewFinished.setNestedScrollingEnabled(false);
 
 
         new ConnectBT().execute(); //Call the class to connect
-
 
 
         ItemTouchHelper itemTouchHelper = new ItemTouchHelper(simpleCallback);
@@ -293,16 +314,16 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
         @Override
         public void onChildDraw(@NonNull Canvas c, @NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, float dX, float dY, int actionState, boolean isCurrentlyActive) {
             new RecyclerViewSwipeDecorator.Builder(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive)
-                    .addSwipeLeftBackgroundColor(Color.parseColor("#CC00A0"))
+                    .addSwipeLeftBackgroundColor(ResourcesCompat.getColor(getResources(), R.color.delete, null))
                     .addSwipeLeftActionIcon(R.drawable.ic_baseline_delete_24)
-                    .addSwipeRightBackgroundColor(Color.parseColor("#00A0CC"))
+                    .addSwipeRightBackgroundColor(ResourcesCompat.getColor(getResources(), R.color.edit, null))
                     .addSwipeRightActionIcon(R.drawable.ic_baseline_edit_24)
                     .create()
                     .decorate();
 
             super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive);
 
-            swipeRefreshLayout.setEnabled(false);
+            //swipeRefreshLayout.setEnabled(false);
 
 
 
@@ -313,13 +334,13 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
             final int position = viewHolder.getAdapterPosition();
 
 
-            swipeRefreshLayout.setEnabled(true);
+            //swipeRefreshLayout.setEnabled(true);
 
 
             textViewTask = viewHolder.itemView.findViewById(R.id.textViewTask);
             frameTask = viewHolder.itemView.findViewById(R.id.frameTask);
 
-            imageViewTask = viewHolder.itemView.findViewById(R.id.imageViewTask);
+
 
             switch (direction) {
 
@@ -354,12 +375,12 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
                             } catch (IOException e) {
 
 
-                                msg("Not connected. Please reconnect to apply changes!");
+                                msg("Not connected. Please press Reconnect and try again");
                                 recyclerAdapter.notifyDataSetChanged();
                             }
                         }
                     } else {
-                        msg("Not connected. Please reconnect to apply changes!");
+                        msg("Not connected. Please press Reconnect and try again");
                         recyclerAdapter.notifyDataSetChanged();
                     }
 
@@ -420,6 +441,9 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
                 workerThread = new Thread(new Runnable() {
                     public void run() {
                         while (!Thread.currentThread().isInterrupted() && !stopWorker) {
+                            if (!isBtConnected){
+                                textViewTitle.setText("Not connected!");
+                            }
                             try {
                                 int bytesAvailable = btSocket.getInputStream().available();
                                 if (bytesAvailable > 0) {
@@ -437,41 +461,81 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
                                             readBufferPosition = 0;
                                             handler.post(new Runnable() {
                                                 public void run() {
-                                                    //msg(data);
 
-                                                    //int splitter= data.indexOf('T');
-                                                    //String bat_lvl=data.substring(0,splitter);
-                                                    //String finished_tasks= data.substring(splitter+1);
+                                                    if (encodedBytes.length !=1) {
+                                                        //msg(data);
 
+                                                        //int splitter= data.indexOf('T');
+                                                        //String bat_lvl=data.substring(0,splitter);
+                                                        //String finished_tasks= data.substring(splitter+1);
+                                                        int batLvl = encodedBytes[0];
 
-                                                    textViewBat.setText(encodedBytes[0] + "%");
+                                                        if (batLvl > 100) {
 
-                                                    int finihsed_n = encodedBytes[1];
-                                                    msg(String.valueOf(finihsed_n));
-                                                    int finished_tasks = finihsed_n - finishedTasksList.size();
-
-
-                                                    if (finihsed_n > finishedTasksList.size()) {
-                                                        for (int f = 0; f < finished_tasks; f++) {
-
-                                                            finishedTasksList.add(tasksList.get(f));
-
+                                                            batLvl = 100;
                                                         }
 
-                                                        ArrayList<String>
-                                                                arrlist2 = new ArrayList<String>();
+                                                        if (encodedBytes[0] < 0) {
 
-                                                        for (int t = 0; t < finished_tasks; t++) {
-                                                            arrlist2.add(tasksList.get(t));
-
+                                                            batLvl = 0;
                                                         }
 
-                                                        tasksList.removeAll(arrlist2);
+                                                        if (batLvl < 100 && batLvl > 70) {
 
-                                                        recyclerFinihsedAdapter.notifyDataSetChanged();
-                                                        recyclerAdapter.notifyDataSetChanged();
+                                                            imageViewBat.setImageResource(R.mipmap.bat_full);
 
-                                                        saveData();
+                                                            imageViewBat.setTag(R.mipmap.bat_full);
+                                                        }
+
+                                                        if (batLvl < 70 && batLvl > 50) {
+
+                                                            imageViewBat.setImageResource(R.mipmap.bat_mid2);
+                                                            imageViewBat.setTag(R.mipmap.bat_mid2);
+                                                        }
+
+                                                        if (batLvl < 50 && batLvl > 30) {
+
+                                                            imageViewBat.setImageResource(R.mipmap.bat_mid1);
+                                                            imageViewBat.setTag(R.mipmap.bat_mid1);
+                                                        }
+
+                                                        if (batLvl < 30 && batLvl > 0) {
+
+                                                            imageViewBat.setImageResource(R.mipmap.bat_low);
+                                                            imageViewBat.setTag(R.mipmap.bat_low);
+                                                        }
+
+
+                                                        textViewBat.setText(batLvl + "%");
+
+                                                        int finihsed_n = encodedBytes[1];
+                                                        //msg(String.valueOf(finihsed_n));
+                                                        int finished_tasks = finihsed_n - finishedTasksList.size();
+
+
+                                                        if (finihsed_n > finishedTasksList.size()) {
+                                                            for (int f = 0; f < finished_tasks; f++) {
+
+                                                                finishedTasksList.add(tasksList.get(f));
+
+                                                            }
+
+                                                            ArrayList<String>
+                                                                    arrlist2 = new ArrayList<String>();
+
+                                                            for (int t = 0; t < finished_tasks; t++) {
+                                                                arrlist2.add(tasksList.get(t));
+
+                                                            }
+
+                                                            tasksList.removeAll(arrlist2);
+
+                                                            recyclerFinihsedAdapter.notifyDataSetChanged();
+                                                            recyclerAdapter.notifyDataSetChanged();
+
+                                                            saveData();
+
+                                                        }
 
                                                     }
 
@@ -499,14 +563,14 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
 
             } catch (Exception e) {
                 // ADD THIS TO SEE ANY ERROR
-                msg("Not connected. Please reconnect to refresh!");
+                msg("Not connected. Please press Reconnect and try again");
             }
 
 
             //recyclerAdapter.notifyDataSetChanged();
         } else {
 
-            msg("Not connected. Please reconnect to refresh!");
+            msg("Not connected. Please press Reconnect and try again");
 
 
         }
@@ -540,7 +604,7 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
                     btSocket.getOutputStream().write(String.valueOf(tasksList.size() + finishedTasksList.size()).getBytes());
 
                 } catch (IOException e) {
-                    msg("Not connected. Please reconnect to apply changes!");
+                    msg("Not connected. Please press Reconnect and try again");
                 }
             }
 
@@ -573,7 +637,8 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
 
                 //}
             } catch (IOException e) {
-                ConnectSuccess = false;//if the try failed, you can check the exception here
+                ConnectSuccess = false;
+                progress.dismiss();//if the try failed, you can check the exception here
             }
             return null;
         }
@@ -584,6 +649,7 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
             super.onPostExecute(result);
 
             if (!ConnectSuccess) {
+                textViewTitle.setText("Not connected!");
 
                 if (!getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
                     msg("Device not supported!");
@@ -595,25 +661,32 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
                     startActivityForResult(enableBtIntent, 1);
 
                 } else {
-                    Toast.makeText(getApplicationContext(), "Connection Failed. Please try again ", Toast.LENGTH_LONG).show();
+                    //Toast.makeText(getApplicationContext(), "Connection Failed. Please try again ", Toast.LENGTH_LONG).show();
                     //finish();
+
+                    new ConnectBT().execute();
+                    isBtConnected = false;
+
 
 
                 }
 
 
             } else {
+                textViewTitle.setText("The Rainmaker");
+
                 msg("Connected.");
-                //isBtConnected = true;
+                isBtConnected = true;
 
                 Refresh(true);
                 stopWorker = true;
-
-
                 Refresh(false);
-            }
 
+            }
             progress.dismiss();
+
+
+
         }
     }
 
@@ -635,10 +708,13 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
         String json = gson.toJson(tasksList);
         String jsonFinished = gson.toJson(finishedTasksList);
         String bat = textViewBat.getText().toString();
+
+
         SharedPreferences.Editor editor = sharedPreferences.edit();
         editor.putString("Set1", json);
         editor.putString("Set2", jsonFinished);
-        editor.putString("bat", jsonFinished);
+        editor.putString("bat", bat);
+
 
         editor.commit();
 
@@ -651,6 +727,7 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
         String jsonFinished = sharedPreferences.getString("Set2", null);
         String bat = sharedPreferences.getString("bat", "--");
 
+
         Type type = new TypeToken<ArrayList<String>>() {
         }.getType();
         tasksList = gson.fromJson(json, type);
@@ -658,13 +735,14 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
 
         textViewBat.setText(bat + '%');
 
+
         if (tasksList == null) {
             //msg("nothing :(");
             tasksList = new ArrayList<>();
 
         }
         if (finishedTasksList == null) {
-            msg("nothing :(");
+            //msg("nothing :(");
             finishedTasksList = new ArrayList<>();
 
         }
