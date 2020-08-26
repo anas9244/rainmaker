@@ -126,12 +126,12 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
         //call the widgtes
 
 
-        imageViewBat = (ImageView) findViewById(R.id.imageViewBat);
-        textViewTitle = (TextView) findViewById(R.id.textViewTitle);
+        imageViewBat = findViewById(R.id.imageViewBat);
+        textViewTitle = findViewById(R.id.textViewTitle);
 
-        btnBat = (Button) findViewById(R.id.btnBat);
-        btnReset = (Button) findViewById(R.id.btnReset);
-        floatBtn = (FloatingActionButton) findViewById(R.id.floatBtn);
+        btnBat = findViewById(R.id.btnBat);
+        btnReset = findViewById(R.id.btnReset);
+        floatBtn = findViewById(R.id.floatBtn);
 
         floatBtn.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -143,7 +143,7 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
 
                         try {
 
-                            btSocket.getOutputStream().write(String.valueOf("").getBytes());
+                            btSocket.getOutputStream().write("".getBytes());
 
                             DialogTaskClass dialogTaskClass = new DialogTaskClass();
                             Bundle bundle = new Bundle();
@@ -187,7 +187,7 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
 
                         try {
 
-                            btSocket.getOutputStream().write(String.valueOf("R").getBytes());
+                            btSocket.getOutputStream().write("R".getBytes());
 
 
                             tasksList.clear();
@@ -216,7 +216,7 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
 
         });
 
-        textViewBat = (TextView) findViewById(R.id.textViewBat);
+        textViewBat = findViewById(R.id.textViewBat);
 
         btnBat.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -228,7 +228,7 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
             }
         });
 
-        swipeRefreshLayout = (SwipeRefreshLayout) findViewById(R.id.swipeTasks);
+        swipeRefreshLayout = findViewById(R.id.swipeTasks);
         swipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
             public void onRefresh() {
@@ -247,7 +247,7 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
 
 
         getData();
-        recyclerView = (RecyclerView) findViewById(R.id.recycler);
+        recyclerView = findViewById(R.id.recycler);
         recyclerAdapter = new RecyclerAdapter(tasksList);
 
 
@@ -259,7 +259,7 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
         //recyclerView.setNestedScrollingEnabled(false);
 
 
-        recyclerViewFinished = (RecyclerView) findViewById(R.id.recyclerFinished);
+        recyclerViewFinished = findViewById(R.id.recyclerFinished);
         recyclerFinihsedAdapter = new RecyclerFinishedAdapter(finishedTasksList);
 
 
@@ -346,7 +346,7 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
                         if ((btSocket.isConnected()) && (myBluetooth.isEnabled())) {
 
                             try {
-                                btSocket.getOutputStream().write(String.valueOf("").getBytes());
+                                btSocket.getOutputStream().write("".getBytes());
 
                                 deletedTask = tasksList.get(position);
                                 tasksList.remove(position);
@@ -364,7 +364,7 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
 
 
                                 //btSocket.getOutputStream().write("D".toString().getBytes());
-                                btSocket.getOutputStream().write(String.valueOf("D" + position + finishedTasksList.size()).getBytes());
+                                btSocket.getOutputStream().write(("D" + position + finishedTasksList.size()).getBytes());
                                 msg(String.valueOf(tasksList.size()));
 
 
@@ -433,7 +433,7 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
                 try {
                     if (once) {
 
-                        btSocket.getOutputStream().write("N".toString().getBytes());
+                        btSocket.getOutputStream().write("N".getBytes());
                     }
 
 
@@ -604,7 +604,7 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
                 if (btSocket.isConnected()) {
                     try {
 
-                        btSocket.getOutputStream().write(String.valueOf("").getBytes());
+                        btSocket.getOutputStream().write("".getBytes());
                         tasksList.add(taskName);
 
                         //recyclerAdapter.notifyItemInserted(tasksList.size()-1);
