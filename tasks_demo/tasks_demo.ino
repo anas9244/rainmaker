@@ -162,11 +162,11 @@ void set_led_tasks(int  tasks, int all_tasks, bool vertical_orient) {
 
   if (vertical_orient == 0) {
 
-    for (int i = 0; i <= tasks; i++) {
+    for (int i = 0; i < tasks; i++) {
       leds[i] = CRGB ( 230, 175, 11);
     }
 
-    for (int i = tasks; i <= all_tasks; i++) {
+    for (int i = tasks; i < all_tasks; i++) {
       leds[i] = CRGB ( 20, 15, 0);
     }
 
@@ -178,12 +178,12 @@ void set_led_tasks(int  tasks, int all_tasks, bool vertical_orient) {
   }
   else if (vertical_orient == 1) {
 
-    for (int i = 9; i >= 9 - tasks; i--) {
+    for (int i = 9; i > 9 - tasks; i--) {
       leds[i] = CRGB ( 230, 175, 11);
 
     }
 
-    for (int i = 9 - tasks; i >= (9 - all_tasks); i--) {
+    for (int i = 9 - tasks; i > (9 - all_tasks); i--) {
       leds[i] = CRGB (  20, 15, 0);
 
     }
@@ -203,22 +203,22 @@ void set_led_ratio(unsigned long break_time, unsigned long work_time) {
 
   } else {
 
-    
+
     over_all_time = break_time + work_time;
 
     Serial.print("overall:");
-     Serial.println(over_all_time);
+    Serial.println(over_all_time);
 
-    work_leds = (float(work_time )/ float(over_all_time));
+    work_leds = (float(work_time ) / float(over_all_time));
 
-        Serial.print("work leds before norm:");
-     Serial.println(work_leds);
+    Serial.print("work leds before norm:");
+    Serial.println(work_leds);
 
-    work_leds=work_leds*10;
+    work_leds = work_leds * 10;
 
 
     Serial.print("work leds:");
-     Serial.println(work_leds);
+    Serial.println(work_leds);
     //break_leds = (break_time / over_all_time) * 10;
 
 
@@ -262,32 +262,32 @@ void led_bat_lvl(int bat_lvl) {
 BluetoothSerial SerialBT;
 
 
-RTC_DATA_ATTR bool turend_on =true;
+bool turend_on = true;
 
-RTC_DATA_ATTR int all_tasks=0;
+int all_tasks = 0;
 
 //int all_tasks=0;
 
-RTC_DATA_ATTR int finished_tasks=0;
+int finished_tasks = 0;
 //int finished_tasks=0;
 
-RTC_DATA_ATTR unsigned long work_time=0;
+unsigned long work_time = 0;
 //unsigned long work_time=0;
 
-RTC_DATA_ATTR unsigned long break_time=0;
+unsigned long break_time = 0;
 
-RTC_DATA_ATTR unsigned long work_start=0;
+unsigned long work_start = 0;
 
-RTC_DATA_ATTR unsigned long break_start=0;
+unsigned long break_start = 0;
 
-RTC_DATA_ATTR bool toggle_shake = 0;
+bool toggle_shake = 0;
 //unsigned long break_time=0;
 
 
 //int all_tasks;
 
 #define uS_TO_S_FACTOR 1000000  /* Conversion factor for micro seconds to seconds */
-#define TIME_TO_SLEEP  1  
+#define TIME_TO_SLEEP  1
 
 void setup() {
   Serial.begin(115200);
@@ -295,48 +295,48 @@ void setup() {
 
 
   pinMode(35, INPUT);
-  
+
 
 
   esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
 
-//  if (all_tasks > 10 or all_tasks < 0) {
-//    all_tasks = 0;
-//  }
-//
-//
-//  if (finished_tasks > 10 or finished_tasks < 0  ) {
-//    finished_tasks = 0;
-//  }
-//  if (first_boot) {
-//    first_boot = false;
-//    Serial.println("first Boot!");
-//    finished_tasks = 0;
-//    all_tasks = 0;
-//
-//    //start_timer=millis();
-//
-//    work_time = 0;
-//    break_time = 0;
-//    work_start = 0;
-//    break_start = 0;
-//
-//  }
+  //  if (all_tasks > 10 or all_tasks < 0) {
+  //    all_tasks = 0;
+  //  }
+  //
+  //
+  //  if (finished_tasks > 10 or finished_tasks < 0  ) {
+  //    finished_tasks = 0;
+  //  }
+  //  if (first_boot) {
+  //    first_boot = false;
+  //    Serial.println("first Boot!");
+  //    finished_tasks = 0;
+  //    all_tasks = 0;
+  //
+  //    //start_timer=millis();
+  //
+  //    work_time = 0;
+  //    break_time = 0;
+  //    work_start = 0;
+  //    break_start = 0;
+  //
+  //  }
 
-//  if (toggle_shake==false){
-    
+  //  if (toggle_shake==false){
+
   SerialBT.begin("The_Rainmaker!");
   Serial.println("bt is ON !!!");
 
   delay(1000);
-  
-//  }
-//  else{
-//    
-//    //turend_on=true;
-//    
-//    
-//}
+
+  //  }
+  //  else{
+  //
+  //    //turend_on=true;
+  //
+  //
+  //}
 
   Serial.println("finished" + finished_tasks);
 
@@ -425,7 +425,10 @@ bool start_measure = 0;
 int deletedTask;
 
 
-unsigned long start_timer=0;
+unsigned long start_timer = 0;
+
+
+unsigned long init_timer = 0;
 
 void loop() {
 
@@ -487,35 +490,35 @@ void loop() {
 
   if (toggle_shake) {
 
-    
 
-    if (turend_on){
-      turend_on=false;
-     leds_off();
-     SerialBT.end();
-     Serial.println("bt is off!");
-     delay(1000);
-//
-//     if (bt_stop()) {
-//        Serial.println("bt is off!");
-//        delay(1000);
-//      }
+
+    if (turend_on) {
+      turend_on = false;
+      leds_off();
+      SerialBT.end();
+      Serial.println("bt is off!");
+      delay(1000);
+      //
+      //     if (bt_stop()) {
+      //        Serial.println("bt is off!");
+      //        delay(1000);
+      //      }
 
     }
 
-    
 
-//    if (bt_off_once) {
-//      bt_off_once = false;
-//      //SerialBT.flush();
-////      if (btStop()) {
-////        Serial.println("bt is off!");
-////        delay(100);
-////      }
-//      bt_once = true;
-      
-      
-//    }
+
+    //    if (bt_off_once) {
+    //      bt_off_once = false;
+    //      //SerialBT.flush();
+    ////      if (btStop()) {
+    ////        Serial.println("bt is off!");
+    ////        delay(100);
+    ////      }
+    //      bt_once = true;
+
+
+    //    }
 
 
     //Serialbt.flush();
@@ -528,45 +531,47 @@ void loop() {
     //    esp_bt_controller_deinit();
   }
   else {
-    if (turend_on==false){
-       turend_on=true;
-       //SerialBT.flush();
-       
-       
-
-       if (SerialBT.begin("The_Rainmaker!")){Serial.println("bt is ON !!!");}
-        delay(1000);
-
-        
-
-        
+    if (turend_on == false) {
+      turend_on = true;
+      //SerialBT.flush();
 
 
-     
-     //leds_off();
 
-    // esp_deep_sleep_start();
+      if (SerialBT.begin("The_Rainmaker!")) {
+        Serial.println("bt is ON !!!");
+      }
+      delay(1000);
+
+
+
+
+
+
+
+      //leds_off();
+
+      // esp_deep_sleep_start();
 
     }
 
-//    if (bt_once) {
-//      
-//      bt_once = false;
-//
-//      turend_on=false;
-//      //      if (SerialBT.begin("The_Rainmaker!")) {
-//      //        Serial.println("bt is on!");
-//      //
-//      //      }
-//      //      delay(100);
-//      //
-//      //bt_off_once = true;
-//      //first_boot = false;
-//
-//     
-//
-//      //ESP.restart();
-//    }
+    //    if (bt_once) {
+    //
+    //      bt_once = false;
+    //
+    //      turend_on=false;
+    //      //      if (SerialBT.begin("The_Rainmaker!")) {
+    //      //        Serial.println("bt is on!");
+    //      //
+    //      //      }
+    //      //      delay(100);
+    //      //
+    //      //bt_off_once = true;
+    //      //first_boot = false;
+    //
+    //
+    //
+    //      //ESP.restart();
+    //    }
 
     if (all_tasks == 0) {
       fade_leds();
@@ -672,19 +677,12 @@ void loop() {
 
       if ((string.toInt() > 0) && (string.toInt() <= 11))
       {
-        if (string.toInt() == 11) {
-          all_tasks = 0;
-          activated = false;
-          break_time = 0;
-          work_time = 0;
 
 
+          if (all_tasks == 0 && finished_tasks == 0 && string.toInt() == 1) {
+            init_timer = millis();
+          }
 
-
-
-
-        }
-        else {
           all_tasks = string.toInt();
 
           Serial.println("alltasks");
@@ -712,12 +710,23 @@ void loop() {
           }
 
 
+          if (current > 85 and current < 105) {
+
+            set_led_ratio(break_time, work_time);
+
+
+          }
+
+
+
+
+
 
 
           activated = true;
 
 
-        }
+        //}
         delay(10);
 
       }
@@ -840,8 +849,10 @@ void loop() {
           if (state_changed) {
             state_changed = 0;
 
-            start_timer = (millis() / 1000);
-            
+            start_timer = (millis() - init_timer) / 1000;
+
+
+
             work_start = start_timer;
 
             break_time = break_time + (start_timer - break_start);
@@ -853,7 +864,9 @@ void loop() {
           Serial.print("Break_time: ");
           Serial.println(break_time);
 
-          set_led_tasks(finished_tasks, all_tasks, vertical_orient);
+          
+
+          
 
 
 
@@ -872,7 +885,13 @@ void loop() {
             //SerialBT.write('T');
             SerialBT.write(finished_tasks);
             SerialBT.write('\n');
+
+            //set_led_tasks(finished_tasks, all_tasks, vertical_orient);
           }
+
+          set_led_tasks(finished_tasks, all_tasks, vertical_orient);
+
+          
 
 
         }
@@ -884,9 +903,11 @@ void loop() {
 
 
           if (state_changed) {
-            
+
             state_changed = 0;
-            start_timer = (millis() / 1000);
+
+            start_timer = (millis() - init_timer) / 1000;
+
             Serial.print("start_tiomer:");
             Serial.println( start_timer);
             break_start = start_timer;

@@ -136,6 +136,8 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
         floatBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+
+
                 if (btSocket != null) {
 
                     if (btSocket.isConnected() && (myBluetooth.isEnabled())) {
@@ -145,17 +147,24 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
 
                             btSocket.getOutputStream().write("".getBytes());
 
-                            DialogTaskClass dialogTaskClass = new DialogTaskClass();
-                            Bundle bundle = new Bundle();
+                            if (finishedTasksList.size()+tasksList.size() < 10) {
 
-                            //bundle.putString("taskName", textViewTask.getText().toString());
-                            bundle.putBoolean("editMode", false);
-                            //bundle.putInt("taskId",position);
+                                DialogTaskClass dialogTaskClass = new DialogTaskClass();
+                                Bundle bundle = new Bundle();
 
-                            dialogTaskClass.setArguments(bundle);
+                                //bundle.putString("taskName", textViewTask.getText().toString());
+                                bundle.putBoolean("editMode", false);
+                                //bundle.putInt("taskId",position);
+
+                                dialogTaskClass.setArguments(bundle);
 
 
-                            dialogTaskClass.show(getSupportFragmentManager(), "example dialog");
+                                dialogTaskClass.show(getSupportFragmentManager(), "example dialog");
+                            }
+                            else{
+
+                                msg("Sorry, you can't add more than 10 tasks");
+                            }
 
 
                         } catch (IOException e) {
