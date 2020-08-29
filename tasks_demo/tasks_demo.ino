@@ -19,7 +19,8 @@
 
 RTC_DATA_ATTR Adafruit_BNO055 bno = Adafruit_BNO055(55);
 
-#define LED_PIN     15
+#define LED_PIN     15  // for huzzah
+//#define LED_PIN     34
 #define NUM_LEDS    10
 
 
@@ -55,16 +56,16 @@ int last_volt = 0;
 unsigned long action_time_bat;
 
 void leds_manage(int i) {
-  leds[0] = CRGB ( 0, 0, i);
-  leds[1] = CRGB ( 0, 0, i);
-  leds[2] = CRGB ( 0, 0, i);
-  leds[3] = CRGB ( 0, 0, i);
-  leds[4] = CRGB ( 0, 0, i);
-  leds[5] = CRGB ( 0, 0, i);
-  leds[6] = CRGB ( 0, 0, i);
-  leds[7] = CRGB ( 0, 0, i);
-  leds[8] = CRGB ( 0, 0, i);
-  leds[9] = CRGB ( 0, 0, i);
+  leds[0] = CRGB ( i, i, 0);
+  leds[1] = CRGB ( i, i, 0);
+  leds[2] = CRGB ( i, i, 0);
+  leds[3] = CRGB ( i, i, 0);
+  leds[4] = CRGB ( i, i, 0);
+  leds[5] = CRGB ( i, i, 0);
+  leds[6] = CRGB ( i, i, 0);
+  leds[7] = CRGB ( i, i, 0);
+  leds[8] = CRGB ( i, i, 0);
+  leds[9] = CRGB ( i, i, 0);
 }
 
 void leds_off() {
@@ -163,11 +164,11 @@ void set_led_tasks(int  tasks, int all_tasks, bool vertical_orient) {
   if (vertical_orient == 0) {
 
     for (int i = 0; i < tasks; i++) {
-      leds[i] = CRGB ( 230, 175, 11);
+      leds[i] = CRGB ( 100, 100, 4);
     }
 
     for (int i = tasks; i < all_tasks; i++) {
-      leds[i] = CRGB ( 20, 15, 0);
+      leds[i] = CRGB ( 15, 15, 0);
     }
 
     for (int i = all_tasks; i <= 9; i++) {
@@ -179,12 +180,12 @@ void set_led_tasks(int  tasks, int all_tasks, bool vertical_orient) {
   else if (vertical_orient == 1) {
 
     for (int i = 9; i > 9 - tasks; i--) {
-      leds[i] = CRGB ( 230, 175, 11);
+      leds[i] = CRGB ( 100, 100, 4);
 
     }
 
     for (int i = 9 - tasks; i > (9 - all_tasks); i--) {
-      leds[i] = CRGB (  20, 15, 0);
+      leds[i] = CRGB (  15, 15, 0);
 
     }
 
@@ -226,11 +227,11 @@ void set_led_ratio(unsigned long break_time, unsigned long work_time) {
       work_leds = 9;
     }
     for (int i = 0; i < int(work_leds); i++) {
-      leds[i] = CRGB ( 3, 23, 63);
+      leds[i] = CRGB ( 3, 15, 40);
     }
 
     for (int i = int(work_leds); i <= 9; i++) {
-      leds[i] = CRGB ( 63, 23, 3);
+      leds[i] = CRGB ( 40, 15, 3);
     }
 
     FastLED.show();
@@ -294,7 +295,8 @@ void setup() {
 
 
 
-  pinMode(35, INPUT);
+  pinMode(35, INPUT); // for huzzah !!!!!!
+  //pinMode(32, INPUT);
 
 
 
@@ -627,6 +629,7 @@ void loop() {
       if (string == "R")
 
       {
+        //ESP.restart();
 
         finished_tasks = 0;
 
