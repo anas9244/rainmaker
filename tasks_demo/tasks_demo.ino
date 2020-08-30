@@ -164,7 +164,7 @@ void set_led_tasks(int  tasks, int all_tasks, bool vertical_orient) {
   if (vertical_orient == 0) {
 
     for (int i = 0; i < tasks; i++) {
-      leds[i] = CRGB ( 100, 100, 4);
+      leds[i] = CRGB ( 70, 70, 4);
     }
 
     for (int i = tasks; i < all_tasks; i++) {
@@ -180,7 +180,7 @@ void set_led_tasks(int  tasks, int all_tasks, bool vertical_orient) {
   else if (vertical_orient == 1) {
 
     for (int i = 9; i > 9 - tasks; i--) {
-      leds[i] = CRGB ( 100, 100, 4);
+      leds[i] = CRGB ( 70, 70, 4);
 
     }
 
@@ -655,10 +655,11 @@ void loop() {
         //String msg= String ("B"+finished_tasks);
 
         volt = analogRead(voltpin);
-        level = map(volt, 1799, 2383, 0, 100);
-        //SerialBT.write(level);
-
+        Serial.println(volt);
+        
+        level = map(volt, 1700, 2383, 0, 100);
         SerialBT.write(level);
+
         //SerialBT.write('T');
         SerialBT.write(finished_tasks);
         SerialBT.write('\n');

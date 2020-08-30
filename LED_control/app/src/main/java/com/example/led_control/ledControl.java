@@ -63,7 +63,7 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
 
 
     public int task_n = 0;
-    public static final String SHARED_PREFS = "sharedPrefs";
+    public static String SHARED_PREFS = "sharedPrefs";
 
 
     Button btnBat, btnReset;
@@ -90,7 +90,7 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
     String address = null;
     private ProgressDialog progress;
     BluetoothAdapter myBluetooth = null;
-    BluetoothSocket btSocket = null;
+    public static BluetoothSocket btSocket = null;
     private boolean isBtConnected = false;
     static final UUID myUUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
 
@@ -660,6 +660,10 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
                 btSocket.connect();//start connection
 
 
+
+
+
+
                 //}
             } catch (IOException e) {
                 ConnectSuccess = false;
@@ -689,6 +693,11 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
                     //Toast.makeText(getApplicationContext(), "Connection Failed. Please try again ", Toast.LENGTH_LONG).show();
                     //finish();
 
+                    Intent sericeIntent = new Intent(getApplicationContext(),Service.class);
+                    sericeIntent.putExtra("blStatus", false);
+
+                    startService(sericeIntent);
+
 
                     new ConnectBT().execute();
                     isBtConnected = false;
@@ -711,6 +720,12 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
                 Refresh(true);
                 stopWorker = true;
                 Refresh(false);
+
+//                Intent sericeIntent = new Intent(getApplicationContext(),Service.class);
+//                sericeIntent.putExtra("blStatus", true);
+//
+//                startService(sericeIntent);
+
 
             }
             progress.dismiss();
