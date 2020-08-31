@@ -10,10 +10,12 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
+import android.app.AlertDialog;
 import android.bluetooth.le.BluetoothLeScanner;
 import android.bluetooth.le.ScanCallback;
 import android.bluetooth.le.ScanResult;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Canvas;
@@ -34,6 +36,7 @@ import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.MultiAutoCompleteTextView;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -82,6 +85,7 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
     ImageView imageViewBat;
 
     TextView textViewTitle;
+    MultiAutoCompleteTextView multiAutoCompleteTextView;
 
     List<String> tasksList;
     List<String> finishedTasksList;
@@ -128,6 +132,7 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
 
         imageViewBat = findViewById(R.id.imageViewBat);
         textViewTitle = findViewById(R.id.textViewTitle);
+        multiAutoCompleteTextView =findViewById(R.id.multiAutoCompleteTextView);
 
         btnBat = findViewById(R.id.btnBat);
         btnReset = findViewById(R.id.btnReset);
@@ -168,7 +173,11 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
 
 
                         } catch (IOException e) {
-                            msg("Not connected. Please press Reconnect and try again");
+                            msg("Not connected. Please press CONNECT and try again");
+
+
+                            textViewTitle.setText("Not connected!");
+                            btnBat.setText("CONNECT");
                         }
 
 
@@ -177,10 +186,14 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
 
                     } else {
 
-                        msg("Not connected. Please press Reconnect and try again");
+                        msg("Not connected. Please press CONNECT and try again");
+                        textViewTitle.setText("Not connected!");
+                        btnBat.setText("CONNECT");
                     }
                 } else {
-                    msg("Not connected. Please press Reconnect and try again");
+                    msg("Not connected. Please press CONNECT and try again");
+                    textViewTitle.setText("Not connected!");
+                    btnBat.setText("CONNECT");
                 }
 
 
@@ -193,32 +206,56 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
                 if (btSocket!=null) {
 
                     if (btSocket.isConnected() && myBluetooth.isEnabled()) {
+                        new AlertDialog.Builder(ledControl.this)
+                                .setTitle("Reset?")
+                                .setMessage("Your progress and work/break time will be reset. Are you sure?")
+                                .setIcon(android.R.drawable.ic_dialog_alert)
+                                .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
 
-                        try {
+                                    public void onClick(DialogInterface dialog, int whichButton) {
 
-                            btSocket.getOutputStream().write("R".getBytes());
+                                        try {
+                                            btSocket.getOutputStream().write("R".getBytes());
 
 
-                            tasksList.clear();
-                            finishedTasksList.clear();
+                                            tasksList.clear();
+                                            finishedTasksList.clear();
 
-                            recyclerAdapter.notifyDataSetChanged();
-                            recyclerFinihsedAdapter.notifyDataSetChanged();
+                                            recyclerAdapter.notifyDataSetChanged();
+                                            recyclerFinihsedAdapter.notifyDataSetChanged();
 
-                            saveData();
-                        } catch (IOException e) {
-                            msg("Not connected. Please press Reconnect and try again");
-                        }
+                                            saveData();
+                                        } catch (IOException e) {
+                                            msg("Not connected. Please press CONNECT and try again");
+                                            textViewTitle.setText("Not connected!");
+                                            btnBat.setText("CONNECT");
+                                        }
+
+                                    }})
+                                .setNegativeButton(android.R.string.no, new DialogInterface.OnClickListener(){
+
+
+                                    @Override
+                                    public void onClick(DialogInterface dialog, int which) {
+
+                                    }
+                                }).show();
+
+
 
 
                     } else {
 
-                        msg("Not connected. Please press Reconnect and try again");
+                        msg("Not connected. Please press CONNECT and try again");
+                        textViewTitle.setText("Not connected!");
+                        btnBat.setText("CONNECT");
                     }
                 }
                 else{
 
-                    msg("Not connected. Please press Reconnect and try again");
+                    msg("Not connected. Please press CONNECT and try again");
+                    textViewTitle.setText("Not connected!");
+                    btnBat.setText("CONNECT");
                 }
             }
 
@@ -380,19 +417,25 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
                             } catch (IOException e) {
 
 
-                                msg("Not connected. Please press Reconnect and try again");
+                                msg("Not connected. Please press CONNECT and try again");
                                 recyclerAdapter.notifyDataSetChanged();
+                                textViewTitle.setText("Not connected!");
+                                btnBat.setText("CONNECT");
                             }
 
                     } else {
-                        msg("Not connected. Please press Reconnect and try again");
+                        msg("Not connected. Please press CONNECT and try again");
                         recyclerAdapter.notifyDataSetChanged();
+                            textViewTitle.setText("Not connected!");
+                            btnBat.setText("CONNECT");
                     }
                     }
                     else{
 
-                        msg("Not connected. Please press Reconnect and try again");
+                        msg("Not connected. Please press CONNECT and try again");
                         recyclerAdapter.notifyDataSetChanged();
+                        textViewTitle.setText("Not connected!");
+                        btnBat.setText("CONNECT");
                     }
 
 
@@ -549,6 +592,15 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
 
                                                                 saveData();
 
+                                                                if (tasksList.size()==0 && finishedTasksList.size()!=0){
+                                                                    multiAutoCompleteTextView.setVisibility(View.VISIBLE);
+                                                                }
+                                                                else{
+                                                                    multiAutoCompleteTextView.setVisibility(View.GONE);
+
+                                                                }
+
+
                                                             }
 
                                                         }
@@ -577,20 +629,26 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
 
                 } catch (Exception e) {
                     // ADD THIS TO SEE ANY ERROR
-                    msg("Not connected. Please press Reconnect and try again");
+                    msg("Not connected. Please press CONNECT and try again");
+                    textViewTitle.setText("Not connected!");
+                    btnBat.setText("CONNECT");
                 }
 
 
                 //recyclerAdapter.notifyDataSetChanged();
             } else {
 
-                msg("Not connected. Please press Reconnect and try again");
+                msg("Not connected. Please press CONNECT and try again");
+                textViewTitle.setText("Not connected!");
+                btnBat.setText("CONNECT");
 
 
             }
         }
         else{
-            msg("Not connected. Please press Reconnect and try again");
+            msg("Not connected. Please press CONNECT and try again");
+            textViewTitle.setText("Not connected!");
+            btnBat.setText("CONNECT");
 
         }
 
@@ -601,6 +659,11 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
     protected void onDestroy() {
         super.onDestroy();
         stopWorker=true;
+        try {
+            btSocket.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
 
     }
@@ -631,12 +694,12 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
                         btSocket.getOutputStream().write(String.valueOf(tasksList.size() + finishedTasksList.size()).getBytes());
 
                     } catch (IOException e) {
-                        msg("Not connected. Please press Reconnect and try again");
+                        msg("Not connected. Please press CONNECT and try again");
                     }
                 }
             }
             else{
-                msg("Not connected. Please press Reconnect and try again");
+                msg("Not connected. Please press CONNECT and try again");
 
             }
 
@@ -652,7 +715,7 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
 
         @Override
         protected void onPreExecute() {
-            progress = ProgressDialog.show(ledControl.this, "Connecting...", "Please wait!!!");  //show a progress dialog
+            progress = ProgressDialog.show(ledControl.this, "Loading...", "Please wait");  //show a progress dialog
         }
 
         @Override
@@ -699,10 +762,12 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
                 } else {
                     //Toast.makeText(getApplicationContext(), "Connection Failed. Please try again ", Toast.LENGTH_LONG).show();
                     //finish();
+                    btnBat.setText("Connect");
 
 
-                    new ConnectBT().execute();
+                    //new ConnectBT().execute();
                     isBtConnected = false;
+                   // btSocket=null;
                     try {
                         btSocket.close();
                     } catch (IOException e) {
@@ -714,6 +779,8 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
 
 
             } else {
+                
+                btnBat.setText("Disconnect");
                 textViewTitle.setText("The Rainmaker");
 
                 msg("Connected.");
@@ -764,6 +831,8 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
 
 
         editor.commit();
+
+        multiAutoCompleteTextView.setVisibility(View.GONE);
 
     }
 
