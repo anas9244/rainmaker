@@ -116,6 +116,7 @@ unsigned long interval = 60;
 bool state_changed = 0;
 
 
+
 void fade_leds(int start_led, int end_led, bool pos)
 {
 
@@ -525,6 +526,13 @@ unsigned long start_timer = 0;
 
 
 unsigned long init_timer = 0;
+
+
+
+
+int taskTimes[10];
+
+unsigned long lastTaskTime=0;
 
 void loop() {
 
@@ -979,6 +987,14 @@ void loop() {
             flipped = 0;
             Serial.println("finished_task!!");
             if (finished_tasks < all_tasks) {
+              if (finished_tasks==0){
+                lastTaskTime = millis() - init_timer;
+                }
+                else{
+                  lastTaskTime = millis() -lastTaskTime;
+                  }
+
+              taskTimes[finished_tasks]=lastTaskTime;
               finished_tasks++;
             }
 
@@ -1003,6 +1019,17 @@ void loop() {
             SerialBT.write(level);
             //SerialBT.write('T');
             SerialBT.write(finished_tasks);
+            //SerialBT.write();
+
+            for (int i;i<10;i++){
+              if (taskTimes[i]!=0){
+                Serial.print("Task ");
+                Serial.print(i);
+                Serial.println(taskTimes[i]/60000);
+                SerialBT.write(int(taskTimes[i]/60000));
+                }
+              
+              }
             SerialBT.write('\n');
 
             //set_led_tasks(finished_tasks, all_tasks, vertical_orient);

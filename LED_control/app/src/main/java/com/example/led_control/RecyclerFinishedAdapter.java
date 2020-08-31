@@ -14,9 +14,11 @@ import java.util.List;
 public class RecyclerFinishedAdapter extends RecyclerView.Adapter <RecyclerFinishedAdapter.ViewHolder>{
 
     List<String> finishedTasksList;
+    List<Integer> tasksDurrs;
 
-    public RecyclerFinishedAdapter(List<String> finishedTasksList) {
+    public RecyclerFinishedAdapter(List<String> finishedTasksList,List<Integer> tasksDurrs) {
         this.finishedTasksList = finishedTasksList;
+        this.tasksDurrs= tasksDurrs;
     }
     @NonNull
     @Override
@@ -35,6 +37,9 @@ public class RecyclerFinishedAdapter extends RecyclerView.Adapter <RecyclerFinis
     public void onBindViewHolder(@NonNull RecyclerFinishedAdapter.ViewHolder holder, int position) {
 
         holder.textViewTaskFinished.setText(finishedTasksList.get(position));
+
+        holder.textViewDurr.setText(String.valueOf(tasksDurrs.get(position)));
+        holder.textViewDurr.setVisibility(View.VISIBLE);
         //holder.textViewIdFinished.setText(String.valueOf(position+1));
 
     }
@@ -49,6 +54,7 @@ public class RecyclerFinishedAdapter extends RecyclerView.Adapter <RecyclerFinis
         TextView textViewTaskFinished;
         FrameLayout frameTaskFinished;
         TextView textViewIdFinished;
+        TextView textViewDurr;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -56,6 +62,7 @@ public class RecyclerFinishedAdapter extends RecyclerView.Adapter <RecyclerFinis
             //editTextTask = itemView.findViewById(R.id.edittextTask);
             frameTaskFinished = itemView.findViewById(R.id.frameTaskFinished);
             textViewIdFinished= itemView.findViewById(R.id.textViewIdFinished);
+            textViewDurr= itemView.findViewById(R.id.textViewDur);
 
 
 
