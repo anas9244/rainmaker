@@ -597,6 +597,13 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
 
     }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        stopWorker=true;
+
+
+    }
 
     @Override
     public void applyText(String taskName, boolean editMode, int taskId) {
@@ -693,11 +700,6 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
                     //Toast.makeText(getApplicationContext(), "Connection Failed. Please try again ", Toast.LENGTH_LONG).show();
                     //finish();
 
-                    Intent sericeIntent = new Intent(getApplicationContext(),Service.class);
-                    sericeIntent.putExtra("blStatus", false);
-
-                    startService(sericeIntent);
-
 
                     new ConnectBT().execute();
                     isBtConnected = false;
@@ -733,6 +735,7 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
 
         }
     }
+
 
 
     @Override
