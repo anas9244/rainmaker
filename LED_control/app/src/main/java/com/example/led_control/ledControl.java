@@ -89,7 +89,6 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
 
     List<String> tasksList;
     List<String> finishedTasksList;
-    List<Integer> tasksDurr;
 
 
     String address = null;
@@ -221,7 +220,6 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
 
                                             tasksList.clear();
                                             finishedTasksList.clear();
-                                            tasksDurr.clear();
 
                                             recyclerAdapter.notifyDataSetChanged();
                                             recyclerFinihsedAdapter.notifyDataSetChanged();
@@ -308,7 +306,7 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
 
 
         recyclerViewFinished = findViewById(R.id.recyclerFinished);
-        recyclerFinihsedAdapter = new RecyclerFinishedAdapter(finishedTasksList,tasksDurr);
+        recyclerFinihsedAdapter = new RecyclerFinishedAdapter(finishedTasksList);
 
 
         recyclerViewFinished.setLayoutManager(new LinearLayoutManager(this));
@@ -589,14 +587,6 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
 
                                                                 tasksList.removeAll(arrlist2);
 
-                                                                for (int d=2; d<encodedBytes.length;d++){
-
-                                                                    tasksDurr.add((int) encodedBytes[d]);
-
-                                                                }
-
-
-
                                                                 recyclerFinihsedAdapter.notifyDataSetChanged();
                                                                 recyclerAdapter.notifyDataSetChanged();
 
@@ -831,14 +821,12 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
         Gson gson = new Gson();
         String json = gson.toJson(tasksList);
         String jsonFinished = gson.toJson(finishedTasksList);
-        String jsonDurrs = gson.toJson(tasksDurr);
         String bat = textViewBat.getText().toString();
 
 
         SharedPreferences.Editor editor = sharedPreferences.edit();
         editor.putString("Set1", json);
         editor.putString("Set2", jsonFinished);
-        editor.putString("Set3", jsonDurrs);
         editor.putString("bat", bat);
 
 
@@ -853,19 +841,13 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
         Gson gson = new Gson();
         String json = sharedPreferences.getString("Set1", null);
         String jsonFinished = sharedPreferences.getString("Set2", null);
-        String jsonDurrs = sharedPreferences.getString("Set3", null);
         String bat = sharedPreferences.getString("bat", "--");
-
 
 
         Type type = new TypeToken<ArrayList<String>>() {
         }.getType();
-
-        Type typeInt = new TypeToken<ArrayList<Integer>>() {
-        }.getType();
         tasksList = gson.fromJson(json, type);
         finishedTasksList = gson.fromJson(jsonFinished, type);
-        tasksDurr= gson.fromJson(jsonDurrs, typeInt);
 
         textViewBat.setText(bat + '%');
 
@@ -878,12 +860,6 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
         if (finishedTasksList == null) {
             //msg("nothing :(");
             finishedTasksList = new ArrayList<>();
-
-        }
-
-        if (tasksDurr == null) {
-            //msg("nothing :(");
-            tasksDurr = new ArrayList<>();
 
         }
 
