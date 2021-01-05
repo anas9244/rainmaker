@@ -42,8 +42,7 @@ CRGB leds[NUM_LEDS];
 // to store the progress of the tasks
 int all_tasks = 0;
 int finished_tasks = 0;
-float  work_leds;
-unsigned long over_all_time;
+
 
 // hepler function for fade_leds function that will change the LEDs based on the given range
 void leds_manage(int i, int start_led, int end_led, bool pos, bool pom) {
@@ -105,9 +104,9 @@ unsigned long interval = 60;
 // helper function for set_led_tasks function for fading certian parts of the LED strip based on the given positions
 void fade_leds(int start_led, int end_led, bool pos, bool pom)
 {
-  if (pom){
+  if (pom) {
     interval = 100;
-   }
+  }
   else {
     interval = 60;
   }
@@ -156,22 +155,22 @@ void fade_leds(int start_led, int end_led, bool pos, bool pom)
     fadeAmount = -fadeAmount;
   }
 
-  if (pom){
+  if (pom) {
     if (brightness >= 7 )
     { // reverse the direction of the fading at the ends of the fade:
       brightness = 7;
       fadeAmount = -fadeAmount;
     }
   }
-  else{
-    
+  else {
+
     if (brightness >= 20 )
     { // reverse the direction of the fading at the ends of the fade:
       brightness = 20;
       fadeAmount = -fadeAmount;
     }
   }
-    
+
 
 }
 
@@ -186,62 +185,6 @@ void set_led_tasks(int  finished, int all_tasks, bool vertical_orient, bool pom 
     fade_leds(9 - finished, 9 - all_tasks, vertical_orient, pom);
   }
 
-}
-
-// function that will map the given work/break time into fading certian parts of the LED strip
-void set_led_ratio(unsigned long break_time, unsigned long work_time) {
-  if (work_time == 0 and break_time == 0) {
-
-
-    for (int i = 0; i < 5; i++) {
-      leds[i] = CRGB ( 0, 0, 40);
-    }
-
-    for (int i = 5; i <= 9; i++) {
-      leds[i] = CRGB ( 40, 10, 0);
-    }
-
-    FastLED.show();
-
-  } else {
-
-    over_all_time = break_time + work_time;
-
-    Serial.print("overall:");
-    Serial.println(over_all_time);
-
-    work_leds = (float(work_time ) / float(over_all_time));
-
-    Serial.print("work leds before norm:");
-    Serial.println(work_leds);
-
-    work_leds = work_leds * 10;
-
-
-    Serial.print("work leds:");
-    Serial.println(work_leds);
-    //break_leds = (break_time / over_all_time) * 10;
-
-
-    if (work_leds == 10) {
-      work_leds = 9;
-    }
-
-    if (work_leds == 0) {
-      work_leds = 1;
-    }
-
-    for (int i = 0; i < int(work_leds); i++) {
-      leds[i] = CRGB ( 0, 0, 40);
-    }
-
-    for (int i = int(work_leds); i <= 9; i++) {
-      leds[i] = CRGB ( 40, 10, 0);
-    }
-
-    FastLED.show();
-
-  }
 }
 
 
@@ -292,17 +235,6 @@ bool turend_on = true;
 bool toggle_shake = 0;
 
 
-
-
-
-
-// to store the time durations for work/break time ratio
-unsigned long work_time = 0;
-unsigned long break_time = 0;
-unsigned long work_start = 0;
-unsigned long break_start = 0;
-unsigned long start_timer = 0;
-unsigned long init_timer = 0;
 
 
 
@@ -361,8 +293,7 @@ unsigned long work_start_pom;
 int work_pom_leds;
 
 
-
-
+bool toggle_flip = 0;
 
 
 
@@ -375,7 +306,7 @@ void loop() {
   current_shake = map(event.orientation.y, -90, 90, 0, 180);
 
   //Serial.println(event.orientation.y);
-  Serial.println(event.orientation.x);
+
 
   //  current_roll = map(event.orientation.x, 0, 360, 0, 100);
   //
@@ -480,12 +411,25 @@ void loop() {
     if (shakes == 4)  {
       delay(500); // very important !!!
       shakes = 0;
-      if (toggle_shake == 0 ) {
-        toggle_shake = 1;
+      Serial.println("finished_task!!");
+      if (finished_tasks < all_tasks) {
+        finished_tasks++;
       }
-      else if (toggle_shake == 1 ) {
-        toggle_shake = 0;
+
+      if (finished_tasks == all_tasks) {
+        Serial.println("finished all!");
+
+
       }
+
+      volt = analogRead(voltpin);
+      level = map(volt, 1700, 2383, 0, 100);
+      //SerialBT.write(level);
+
+      SerialBT.write(level);
+      //SerialBT.write('T');
+      SerialBT.write(finished_tasks);
+      SerialBT.write('\n');
 
 
       Serial.println ("shaking");
@@ -496,449 +440,360 @@ void loop() {
   }
 
 
-  if (toggle_shake) {
-    //Serial.println(shakes);
-    if (turend_on) {
-      turend_on = false;
-      pom_toggle = true;
-    }
+
+  //Serial.println(shakes);
 
 
 
 
-    //    if (turend_on) {
-    //      turend_on = false;
-    //      leds_off();
-    //      SerialBT.end();
-    //      Serial.println("bt is off!");
-    //      delay(1000);
-    //
-    //    }
 
+
+
+
+
+  if (all_tasks == 0) {
+    //fade_leds(0, 9,0);
   }
   else {
-
-    //Serial.println(shakes);
-    if (turend_on == false) {
-      turend_on = true;
-      pom_toggle = false;
+    activated = true;
+  }
 
 
-      if (SerialBT.begin("The_Rainmaker!")) {
-        Serial.println("bt is ON !!!");
+
+
+
+  if (SerialBT.available() > 0) {
+
+    {
+      string = "";
+    }
+
+
+    while (SerialBT.available() > 0)
+    {
+      command = ((byte)SerialBT.read());
+
+      if (command == ':')
+      {
+        break;
       }
-      delay(1000);
 
+      else
+      {
+        string += command;
+      }
+
+      delay(1);
     }
 
 
+    if (string == "TO")
 
-    if (all_tasks == 0) {
-      //fade_leds(0, 9,0);
-    }
-    else {
+    {
+      Serial.println("ON is sent!!");
       activated = true;
     }
 
 
+    if (string == "R")
 
+    {
 
 
-    if (SerialBT.available() > 0) {
+      finished_tasks = 0;
 
-      {
-        string = "";
-      }
 
 
-      while (SerialBT.available() > 0)
-      {
-        command = ((byte)SerialBT.read());
 
-        if (command == ':')
-        {
-          break;
-        }
+      all_tasks = 0;
+      activated = false;
 
-        else
-        {
-          string += command;
-        }
-
-        delay(1);
-      }
-
-
-      if (string == "TO")
-
-      {
-        Serial.println("ON is sent!!");
-        activated = true;
-      }
-
-
-      if (string == "R")
-
-      {
-
-
-        finished_tasks = 0;
-
-        break_time = 0;
-        work_time = 0;
-        work_start = 0;
-        break_start = 0;
-
-
-        all_tasks = 0;
-        activated = false;
-
-        set_led_tasks(finished_tasks, all_tasks, vertical_orient);
-
-      }
-
-      if (string == "N")
-      {
-        Serial.println("N");
-
-        volt = analogRead(voltpin);
-        Serial.println(volt);
-
-        level = map(volt, 1700, 2383, 0, 100);
-        SerialBT.write(level);
-
-
-        SerialBT.write(finished_tasks);
-        SerialBT.write('\n');
-
-      }
-
-
-      if (string == "TF")
-      {
-        Serial.println("off is sent!");
-
-        for (int i = 0; i <= 9; i++) {
-          leds[i] = CRGB ( 0, 0, 0);
-        }
-        FastLED.show();
-
-        activated = false;
-      }
-
-      if ((string.toInt() > 0) && (string.toInt() <= 11))
-      {
-
-        if (all_tasks == 0 && finished_tasks == 0 && string.toInt() == 1)  {
-          init_timer = millis();
-        }
-
-        all_tasks = string.toInt();
-
-        Serial.println("alltasks");
-        Serial.println(all_tasks);
-        current = map(event.orientation.y, -90, 90, 0, 180);
-
-        Serial.println( current);
-
-
-        if (current > 155 and current < 180) {
-          vertical_orient == 0;
-          Serial.println("straigght !!");
-
-          set_led_tasks(finished_tasks, all_tasks, vertical_orient);
-        }
-
-        if (current > 0 and current < 20) {
-          vertical_orient == 1;
-
-          Serial.println("upside down !!");
-
-
-          set_led_tasks(finished_tasks, all_tasks, vertical_orient);
-        }
-
-        if (current > 85 and current < 105) {
-
-          set_led_ratio(break_time, work_time);
-
-        }
-
-        activated = true;
-
-
-        delay(10);
-
-      }
-      if (string.startsWith("D")) {
-        string.remove(0, 1);
-
-        deletedTask = string.toInt() ;
-
-        Serial.println(deletedTask);
-        if ((deletedTask + 1) > finished_tasks) {
-
-          all_tasks--;
-        }
-        delay(10);
-
-        if (all_tasks == 0) {
-          finished_tasks = 0;
-
-
-
-          break_time = 0;
-          work_time = 0;
-          work_start = 0;
-          break_start = 0;
-
-
-          all_tasks = 0;
-          activated = false;
-        }
-
-        set_led_tasks(finished_tasks, all_tasks, vertical_orient);
-      }
-
-
-    }
-    if (activated) {
-      current = map(event.orientation.y, -90, 90, 0, 180);
-
-      if (abs(current - last) > 5) {
-        if (start_action == 1 ) {
-          Serial.println("action start!");
-
-          val_start = last;
-          start_action = 0;
-
-        }
-
-        last = current;
-        action_time = millis();
-        Serial.println(current);
-
-      }
-
-      if (millis() - action_time > 700 and start_action == 0) {
-        Serial.println("action finish!");
-        start_action = 1;
-
-        if (current > 155 and current < 180) {
-          if (state == 1)
-          { state_changed = 1;
-
-          }
-
-          Serial.println("work");
-          if (state == 0) {
-            if (vertical_orient == 1) {
-              flipped = 1;
-            } else {
-              flipped = 0;
-            }
-          }
-          state = 0;
-          vertical_orient = 0;
-
-        }
-
-        if (current > 0 and current < 20) {
-
-          if (state == 1)
-          { state_changed = 1;
-
-          }
-
-          Serial.println("work");
-
-          if (state == 0) {
-            if (vertical_orient == 0) {
-              flipped = 1;
-            } else {
-              flipped = 0;
-            }
-          }
-          state = 0;
-          vertical_orient = 1;
-
-        }
-
-        if (current > 85 and current < 105) {
-          if (state == 0)
-          { state_changed = 1;
-
-          }
-
-          Serial.println("break");
-          state = 1;
-        }
-
-        if (state == 0) {
-
-          Serial.print("finished tasks");
-          Serial.println(finished_tasks);
-          Serial.print("all_tasks");
-          Serial.println(all_tasks);
-
-
-          if (state_changed) {
-            state_changed = 0;
-            if (finished_tasks < all_tasks) {
-
-
-              start_timer = (millis() - init_timer) / 1000;
-
-              work_start = start_timer;
-
-              break_time = break_time + (start_timer - break_start);
-            }
-
-          }
-
-          Serial.print("Work_time: ");
-          Serial.println(work_time);
-
-          Serial.print("Break_time: ");
-          Serial.println(break_time);
-
-
-          if (flipped) {
-            flipped = 0;
-            Serial.println("finished_task!!");
-            if (finished_tasks < all_tasks) {
-              finished_tasks++;
-            }
-
-            if (finished_tasks == all_tasks) {
-              Serial.println("finished all!");
-
-
-            }
-
-            volt = analogRead(voltpin);
-            level = map(volt, 1700, 2383, 0, 100);
-            //SerialBT.write(level);
-
-            SerialBT.write(level);
-            //SerialBT.write('T');
-            SerialBT.write(finished_tasks);
-            SerialBT.write('\n');
-
-          }
-
-        }
-
-        else if (state == 1) {
-
-          if (state_changed) {
-
-            if (finished_tasks < all_tasks) {
-
-              state_changed = 0;
-
-              start_timer = (millis() - init_timer) / 1000;
-
-              Serial.print("start_tiomer:");
-              Serial.println( start_timer);
-              break_start = start_timer;
-
-
-              work_time = work_time + (start_timer - work_start);
-            }
-          }
-
-          Serial.print("Work_time: ");
-          Serial.println(work_time);
-
-          Serial.print("Break_time: ");
-          Serial.println(break_time);
-
-          set_led_ratio(break_time, work_time);
-
-        }
-
-      }
-
-    }
-
-  }
-
-  if (turend_on) {
-
-    if (all_tasks != 0) {
-
-      if (state == 0) {
-        set_led_tasks(finished_tasks, all_tasks, vertical_orient);
-
-      }
-
-    }
-    else {
       set_led_tasks(finished_tasks, all_tasks, vertical_orient);
 
     }
 
+    if (string == "N")
+    {
+      Serial.println("N");
+
+      volt = analogRead(voltpin);
+      Serial.println(volt);
+
+      level = map(volt, 1700, 2383, 0, 100);
+      SerialBT.write(level);
+
+
+      SerialBT.write(finished_tasks);
+      SerialBT.write('\n');
+
+    }
+
+
+    if (string == "TF")
+    {
+      Serial.println("off is sent!");
+
+      for (int i = 0; i <= 9; i++) {
+        leds[i] = CRGB ( 0, 0, 0);
+      }
+      FastLED.show();
+
+      activated = false;
+    }
+
+    if ((string.toInt() > 0) && (string.toInt() <= 11))
+    {
+
+
+
+      all_tasks = string.toInt();
+
+      Serial.println("alltasks");
+      Serial.println(all_tasks);
+      current = map(event.orientation.y, -90, 90, 0, 180);
+
+      Serial.println( current);
+
+
+      if (current > 155 and current < 180) {
+        vertical_orient == 0;
+        Serial.println("straigght !!");
+
+        set_led_tasks(finished_tasks, all_tasks, vertical_orient);
+      }
+
+      if (current > 0 and current < 20) {
+        vertical_orient == 1;
+
+        Serial.println("upside down !!");
+
+
+        set_led_tasks(finished_tasks, all_tasks, vertical_orient);
+      }
+
+      if (current > 85 and current < 105) {
+
+        // if in break mode (horizontal)
+        //set_led_ratio(break_time, work_time);
+      }
+
+      activated = true;
+
+
+      delay(10);
+
+    }
+    if (string.startsWith("D")) {
+      string.remove(0, 1);
+
+      deletedTask = string.toInt() ;
+
+      Serial.println(deletedTask);
+      if ((deletedTask + 1) > finished_tasks) {
+
+        all_tasks--;
+      }
+      delay(10);
+
+      if (all_tasks == 0) {
+        finished_tasks = 0;
+
+
+        all_tasks = 0;
+        activated = false;
+      }
+
+      set_led_tasks(finished_tasks, all_tasks, vertical_orient);
+    }
+
+
+  }
+  if (activated) {
+    current = map(event.orientation.y, -90, 90, 0, 180);
+
+    if (abs(current - last) > 5) {
+      if (start_action == 1 ) {
+        Serial.println("action start!");
+
+        val_start = last;
+        start_action = 0;
+
+      }
+
+      last = current;
+      action_time = millis();
+      Serial.println(current);
+
+    }
+
+    if (millis() - action_time > 700 and start_action == 0) {
+      Serial.println("action finish!");
+      start_action = 1;
+
+      if (current > 155 and current < 180) {
+        if (state == 1)
+        { state_changed = 1;
+
+        }
+
+        Serial.println("work");
+        if (state == 0) {
+          if (vertical_orient == 1) {
+            flipped = 1;
+          } else {
+            flipped = 0;
+          }
+        }
+
+        state = 0;
+        vertical_orient = 0;
+
+      }
+
+      if (current > 0 and current < 20) {
+
+        if (state == 1)
+        { state_changed = 1;
+
+        }
+
+        Serial.println("work");
+
+        if (state == 0) {
+          if (vertical_orient == 0) {
+            flipped = 1;
+          } else {
+            flipped = 0;
+          }
+        }
+        state = 0;
+        vertical_orient = 1;
+
+      }
+
+      if (current > 85 and current < 105) {
+        if (state == 0)
+        { state_changed = 1;
+
+        }
+
+        Serial.println("break");
+        state = 1;
+      }
+
+
+
+      if (state == 0) {
+
+        Serial.print("finished tasks");
+        Serial.println(finished_tasks);
+        Serial.print("all_tasks");
+        Serial.println(all_tasks);
+
+
+
+
+
+
+        if (flipped) {
+          flipped = 0;
+
+          if (toggle_flip == false) {
+            toggle_flip = true;
+          }
+
+          else if (toggle_flip == true) {
+            toggle_flip = false;
+          }
+
+        }
+
+        if (toggle_flip) {
+          pom_toggle = true;
+        }
+        else {
+          pom_toggle = false;
+        }
+
+
+
+      }
+
+    }
+
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+  if (pom_toggle) {
+
+
+
+    if (work_pom_time < work_pom) {
+      start_break = false;
+      if (start_work) {
+        start_work = false;
+        work_start_pom = millis();
+      }
+
+      work_pom_time = millis() - work_start_pom;
+
+      work_pom_leds = map(work_pom_time, 0, work_pom, 0, 9);
+
+      for (int i = 0; i < work_pom_leds + 1; i++) {
+        leds[i] = CRGB ( 1, 0, 0);
+      }
+
+      for (int i = work_pom_leds + 1; i <= 9; i++) {
+        leds[i] = CRGB ( 0, 0, 0);
+      }
+
+      FastLED.show();
+    }
+    else {
+
+      if (start_break == false) {
+        start_break = true;
+        break_start_pom = millis();
+
+      }
+      break_pom_time = millis() -  break_start_pom;
+
+      // replace with proper flash fade code
+      set_led_tasks(finished_tasks, all_tasks, vertical_orient, true);
+
+      if (break_pom_time >= break_pom)
+      {
+        start_break == false;
+        start_work = true;
+        work_pom_time = 0;
+        break_pom_time = 0;
+        work_pom_leds = 0;
+        
+
+
+
+
+      }
+    }
   }
   else {
 
 
-    if (pom_toggle) {
-
-      if (work_pom_time < work_pom) {
-        start_break = false;
-        if (start_work) {
-          start_work = false;
-          work_start_pom = millis();
-        }
-
-        work_pom_time = millis() - work_start_pom;
-
-        work_pom_leds = map(work_pom_time, 0, work_pom, 0, 9);
-
-        for (int i = 0; i < work_pom_leds + 1; i++) {
-          leds[i] = CRGB ( 1, 0, 0);
-        }
-
-        for (int i = work_pom_leds + 1; i <= 9; i++) {
-          leds[i] = CRGB ( 0, 0, 0);
-        }
-
-        FastLED.show();
-      }
-      else {
-
-        if (start_break == false) {
-          start_break = true;
-          break_start_pom = millis();
-
-        }
-        break_pom_time = millis() -  break_start_pom;
-
-        // replace with proper flash fade code
-        set_led_tasks(finished_tasks, all_tasks, vertical_orient, true);
-
-        if (break_pom_time >= break_pom)
-        {
-          start_break == false;
-          start_work = true;
-          work_pom_time = 0;
-          break_pom_time = 0;
-          work_pom_leds = 0;
-
-
-        }
-
-
-      }
 
 
 
 
-    }
+    set_led_tasks(finished_tasks, all_tasks, vertical_orient, false);
   }
-
-
-
 
 }
