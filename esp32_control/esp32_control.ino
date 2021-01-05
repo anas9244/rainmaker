@@ -1,71 +1,54 @@
+/*
+  The following code will:
+  1- make esp32 run as a Bluetooth server
+  2- recieve the readings from the connected accelerometer and classify them based on certian thresholds
+  3- based on the classifed event, change the LED output and send short messages to the connected Bluetooth device
+   ,that is unless one of the classifed events is "shaking", in which case it will tuggle the Bluetooth and LED strip on and off
+
+*/
+
+
+// include necessary libraries
 #include <FastLED.h>
 #include <Arduino.h>
 #include <analogWrite.h>
 #include <Wire.h>
-
 #include "BluetoothSerial.h"
-
-
 #include "esp_deep_sleep.h"
-
-#if !defined(CONFIG_BT_ENABLED) || !defined(CONFIG_BLUEDROID_ENABLED)
-#error Bluetooth is not enabled! Please run `make menuconfig` to and enable it
-#endif
-
-//hi
-
 #include <Wire.h>
 #include <Adafruit_Sensor.h>
 #include <Adafruit_BNO055.h>
 #include <utility/imumaths.h>
 
+
+#if !defined(CONFIG_BT_ENABLED) || !defined(CONFIG_BLUEDROID_ENABLED)
+#error Bluetooth is not enabled! Please run `make menuconfig` to and enable it
+#endif
+
+// init accelerometer
 RTC_DATA_ATTR Adafruit_BNO055 bno = Adafruit_BNO055(55);
 
-//#define LED_PIN     15  // for huzzah
-//int voltpin = 35;  // for huzzah
-int voltpin = 32;
-#define LED_PIN     13
+#define LED_PIN     15  // for huzzah
+int voltpin = 35;  // for huzzah
+
+//int voltpin = 32; // for testing
+//#define LED_PIN  12 // for testing
+
+// init number of leds
 #define NUM_LEDS    10
-
-
-
 CRGB leds[NUM_LEDS];
 
-String string;
-void init_led(int led_n) {
 
-  for (int i = 0; i < led_n; i++) {
-    leds[i] = CRGB ( 0, 0, 5);
-  }
-
-  FastLED.show();
-
-}
-
-
-bool led_mode = 0 ;// 0 for tasks, 1 for breat/time
-
+// to store the progress of the tasks
+int all_tasks = 0;
+int finished_tasks = 0;
 float  work_leds;
-unsigned long break_leds;
 unsigned long over_all_time;
 
-
-
-
-float volt = 0;
-int last_vlt = 0;
-int level = 0;
-
-int last_volt = 0;
-unsigned long action_time_bat;
-
-void leds_manage(int i, int start_led, int end_led, bool pos) {
-
-
+// hepler function for fade_leds function that will change the LEDs based on the given range
+void leds_manage(int i, int start_led, int end_led, bool pos, bool pom) {
   if (pos == 0) {
-
     if (end_led != 0) {
-
       for (int l = start_led; l < end_led; l++) {
         leds[l] = CRGB ( i, i, 0);
       }
@@ -92,8 +75,16 @@ void leds_manage(int i, int start_led, int end_led, bool pos) {
 
     }
   }
+
+  if (pom == true) {
+    for (int l = 0; l <= 9; l++) {
+      leds[l] = CRGB ( i, 0, 0);
+    }
+  }
 }
 
+
+//  function to turn off the LEDs
 void leds_off() {
   for (int i = 0; i <= 9; i++) {
     leds[i] = CRGB ( 0, 0, 0);
@@ -102,27 +93,24 @@ void leds_off() {
 }
 
 
-void leds_on() {
-  for (int i = 0; i <= 9; i++) {
-    leds[i] = CRGB ( 0, 0, 50);
-  }
-  FastLED.show();
-}
 
-unsigned long last_fade_on = 0;
-unsigned long last_fade_off = 0;
 
+// variables for LEDs fading fuction
 int brightness = 0;    // how bright the LED is
 int fadeAmount = 1;    // how many points to fade the LED by
 unsigned long previousMillis = 0;
 unsigned long interval = 60;
 
-bool state_changed = 0;
 
-
-void fade_leds(int start_led, int end_led, bool pos)
+// helper function for set_led_tasks function for fading certian parts of the LED strip based on the given positions
+void fade_leds(int start_led, int end_led, bool pos, bool pom)
 {
-
+  if (pom){
+    interval = 100;
+   }
+  else {
+    interval = 60;
+  }
   if (pos == 0) {
 
     if (end_led == 0) {
@@ -133,70 +121,28 @@ void fade_leds(int start_led, int end_led, bool pos)
         leds[i] = CRGB ( 30, 30, 0);
       }
 
-
-
-
-
-
-
-
-      //    for (int i = tasks; i < all_tasks; i++) {
-      //      leds[i] = CRGB ( 15, 15, 0);
-      //    }
-
-
-
       for (int i = end_led; i <= 9; i++) {
         leds[i] = CRGB ( 0, 0, 0);
       }
-
     }
-
-    //fade_leds(tasks, all_tasks,vertical_orient);
-
-
-
-
   }
   else if (pos == 1) {
 
-
     if (end_led == 9) {
-
     }
     else {
-
-
       for (int i = 9; i > start_led; i--) {
         leds[i] = CRGB ( 30, 30, 0);
-
       }
-      //    for (int i = 9 - tasks; i > (9 - all_tasks); i--) {
-      //      leds[i] = CRGB (  15, 15, 0);
-      //
-      //    }
-
-
-
-
 
       for (int i = (end_led); i >= 0; i--) {
         leds[i] = CRGB ( 0, 0, 0);
-
       }
-
-
     }
-
-    //fade_leds(9 - tasks, 9 - all_tasks,vertical_orient);
-
-
-
   }
 
-
   unsigned long currentMillis = millis(); // grab current time
-  leds_manage(brightness, start_led, end_led, pos);
+  leds_manage(brightness, start_led, end_led, pos, pom);
   FastLED.show();   // set the brightness of ledPin:
 
   if (currentMillis - previousMillis >= interval) {
@@ -204,109 +150,45 @@ void fade_leds(int start_led, int end_led, bool pos)
     previousMillis = millis();
   }
 
-
   if (brightness <= 0 )
   { // reverse the direction of the fading at the ends of the fade:
     brightness = 0;
     fadeAmount = -fadeAmount;
   }
-  if (brightness >= 20 )
-  { // reverse the direction of the fading at the ends of the fade:
-    brightness = 20;
-    fadeAmount = -fadeAmount;
+
+  if (pom){
+    if (brightness >= 7 )
+    { // reverse the direction of the fading at the ends of the fade:
+      brightness = 7;
+      fadeAmount = -fadeAmount;
+    }
   }
+  else{
+    
+    if (brightness >= 20 )
+    { // reverse the direction of the fading at the ends of the fade:
+      brightness = 20;
+      fadeAmount = -fadeAmount;
+    }
+  }
+    
 
-
-
-
-  //unsigned long start_fade = millis();
-
-
-
-
-  //  for (int i = 0; i <= 25; i++) {
-  //    if (millis() - last_fade_on > 1000)
-  //    {
-  //      last_fade_on = millis();
-  //      leds_manage(i);
-  //      FastLED.show();
-  //      //delay(100);
-  //    }
-  //
-  //  }
-  //
-  //  for (int i = 25; i >= 0; i--) {
-  //
-  //    if (millis() - last_fade_off > 2000)
-  //    {
-  //
-  //      last_fade_off = millis();
-  //      leds_manage(i);
-  //      FastLED.show();
-  //
-  //      //delay(100);
-  //
-  //    }
-  //
-  //  }
-
-  //delay(200);
 }
 
 
-
-void set_led_tasks(int  tasks, int all_tasks, bool vertical_orient) {
-
+// function that will map the given all tasks/finished tasks into fading certian parts of the LED strip
+void set_led_tasks(int  finished, int all_tasks, bool vertical_orient, bool pom = false) {
 
   if (vertical_orient == 0) {
-
-    //    for (int i = 0; i < tasks; i++) {
-    //      leds[i] = CRGB ( 70, 70, 4);
-    //    }
-    //
-    //
-    //    //    for (int i = tasks; i < all_tasks; i++) {
-    //    //      leds[i] = CRGB ( 15, 15, 0);
-    //    //    }
-    //
-    //
-    //    for (int i = all_tasks; i <= 9; i++) {
-    //      leds[i] = CRGB ( 0, 0, 0);
-    //    }
-
-    fade_leds(tasks, all_tasks, vertical_orient);
-
-    // FastLED.show();
-
-
-
+    fade_leds(finished, all_tasks, vertical_orient, pom);
   }
   else if (vertical_orient == 1) {
-    //
-    ////    for (int i = 9; i > 9 - tasks; i--) {
-    ////      leds[i] = CRGB ( 70, 70, 4);
-    ////
-    ////    }
-    ////    //    for (int i = 9 - tasks; i > (9 - all_tasks); i--) {
-    ////    //      leds[i] = CRGB (  15, 15, 0);
-    ////    //
-    ////    //    }
-    ////
-    ////
-    ////
-    ////    for (int i = (9 - all_tasks); i >= 0; i--) {
-    ////      leds[i] = CRGB ( 0, 0, 0);
-    ////
-    ////    }
-
-    //
-    fade_leds(9 - tasks, 9 - all_tasks, vertical_orient);
-    //
-    //
-    //    //FastLED.show();
+    fade_leds(9 - finished, 9 - all_tasks, vertical_orient, pom);
   }
 
 }
+
+// function that will map the given work/break time into fading certian parts of the LED strip
 void set_led_ratio(unsigned long break_time, unsigned long work_time) {
   if (work_time == 0 and break_time == 0) {
 
@@ -321,13 +203,7 @@ void set_led_ratio(unsigned long break_time, unsigned long work_time) {
 
     FastLED.show();
 
-
-
-
-
-
   } else {
-
 
     over_all_time = break_time + work_time;
 
@@ -370,122 +246,21 @@ void set_led_ratio(unsigned long break_time, unsigned long work_time) {
 
 
 
-
-void led_bat_lvl(int bat_lvl) {
-
-
-  for (int i = 0; i < bat_lvl; i++) {
-    leds[i] = CRGB ( 255, 255, 0);
-  }
-  for (int i = bat_lvl; i <= 9; i++) {
-    leds[i] = CRGB ( 0, 0, 0);
-  }
-
-  FastLED.show();
-
-}
-
-
-
-
-
 BluetoothSerial SerialBT;
-
-
-bool turend_on = true;
-
-int all_tasks = 0;
-
-//int all_tasks=0;
-
-int finished_tasks = 0;
-//int finished_tasks=0;
-
-unsigned long work_time = 0;
-//unsigned long work_time=0;
-
-unsigned long break_time = 0;
-
-unsigned long work_start = 0;
-
-unsigned long break_start = 0;
-
-bool toggle_shake = 0;
-//unsigned long break_time=0;
-
-
-//int all_tasks;
-
-#define uS_TO_S_FACTOR 1000000  /* Conversion factor for micro seconds to seconds */
-#define TIME_TO_SLEEP  1
 
 void setup() {
   Serial.begin(115200);
 
-
-
-  //pinMode(35, INPUT); // for huzzah !!!!!!
-  //pinMode(32, INPUT);
-
-
-
-  esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
-
-  //  if (all_tasks > 10 or all_tasks < 0) {
-  //    all_tasks = 0;
-  //  }
-  //
-  //
-  //  if (finished_tasks > 10 or finished_tasks < 0  ) {
-  //    finished_tasks = 0;
-  //  }
-  //  if (first_boot) {
-  //    first_boot = false;
-  //    Serial.println("first Boot!");
-  //    finished_tasks = 0;
-  //    all_tasks = 0;
-  //
-  //    //start_timer=millis();
-  //
-  //    work_time = 0;
-  //    break_time = 0;
-  //    work_start = 0;
-  //    break_start = 0;
-  //
-  //  }
-
-  //  if (toggle_shake==false){
-
+  // Start Bluetooth on first bootup
   SerialBT.begin("The_Rainmaker!");
-  Serial.println("bt is ON !!!");
+  Serial.println("BT is ON !");
 
   delay(1000);
 
-  //  }
-  //  else{
-  //
-  //    //turend_on=true;
-  //
-  //
-  //}
-
-  Serial.println("finished" + finished_tasks);
-
-
-
-
-
-  //pinMode(LED_PIN, OUTPUT);
+  // Assing the leds array to a pin
   FastLED.addLeds<WS2812, LED_PIN, GRB>(leds, NUM_LEDS);
 
-  //  for (int i = 0; i <= 9 ; i++) {
-  //    leds[i] = CRGB ( 0, 0, 0);
-  //
-  //  }
 
-
-
-  //init_led(6);
   /* Initialise the sensor */
   if (!bno.begin())
   {
@@ -501,76 +276,178 @@ void setup() {
 }
 
 
+
+//####################
+// Define variables that will be used in loop()
+//####################
+
+
+// to handlle messages over Bluetooth
+String string;
+char command;
+int deletedTask;
+
+// for toggling the sleep mode
+bool turend_on = true;
+bool toggle_shake = 0;
+
+
+
+
+
+
+// to store the time durations for work/break time ratio
+unsigned long work_time = 0;
+unsigned long break_time = 0;
+unsigned long work_start = 0;
+unsigned long break_start = 0;
+unsigned long start_timer = 0;
+unsigned long init_timer = 0;
+
+
+
+// for classification of the accelerometer readings
 int last = 0;
 int current = 0;
-
+bool state_changed = 0;
 int current_shake = 0;
-
-
 unsigned long action_time;
-
 bool start_action = 1;
-
 int val_start;
-
 bool state = 0; // 0 for work, 1 for break
-
-
-
-
-
 bool activated = false;
-
-char command;
-
-
-
 bool vertical_orient; // 0 for upright, 1 for upsidedown
-
 bool flipped;
+int last_val = 0;
 
-
-
-
+//// for shaking classification
 int shakes = 0;
 bool shake_direct = 0;
-
 bool shaking = 0;
 int last_shake = 0;
-
-int last_val = 0;
 unsigned long shake_time;
 
 
-
-bool show_bat_lvl = 0;
-
-
-bool bt_once = false;
-
-bool bt_off_once = true;
+// variables for power managment
+float volt = 0;
+int level = 0;
+int last_volt = 0;
 
 
-bool start_measure = 0;
+int current_roll = 0;
+int last_roll = 0;
+int last_val_roll = 0;
+bool roll_direct = 0;
+int rolls = 0;
 
-int deletedTask;
+bool toggle_roll = 0;
+unsigned long roll_time;
 
 
-unsigned long start_timer = 0;
+
+bool pom_toggle = false;
+bool start_work = true;
+bool start_break = false;
+unsigned long work_pom = 20000;
+unsigned long break_pom = 10000;
+
+unsigned long break_pom_time;
+unsigned long work_pom_time;
+
+unsigned long break_start_pom;
+unsigned long work_start_pom;
 
 
-unsigned long init_timer = 0;
+int work_pom_leds;
 
-bool lowBat = false;
+
+
+
+
+
+
 
 void loop() {
-
-
 
   sensors_event_t event;
   bno.getEvent(&event);
 
   current_shake = map(event.orientation.y, -90, 90, 0, 180);
+
+  //Serial.println(event.orientation.y);
+  Serial.println(event.orientation.x);
+
+  //  current_roll = map(event.orientation.x, 0, 360, 0, 100);
+  //
+  //
+  //  if (current_roll > last_val_roll) {
+  //    if (roll_direct == 0 and abs(current_roll - last_roll) > 5 ) {
+  //      Serial.println (rolls);
+  //      rolls++;
+  //      roll_direct = 1;
+  //      last_roll = current_roll;
+  //    }
+  //  }
+  //
+  //  if (current_roll < last_val_roll) {
+  //    if (roll_direct == 1 and abs(current_roll - last_roll ) > 5 ) {
+  //      Serial.println (rolls);
+  //      rolls++;
+  //      roll_direct = 0;
+  //      last_roll = current_roll;
+  //    }
+  //  }
+  //
+  //
+  //  last_val_roll = current_roll;
+  //
+  //  if (rolls == 1) {
+  //    roll_time = millis();
+  //  }
+  //
+  // if (rolls == 2)  {
+  //  if  (millis() - roll_time < 300) {
+  //
+  //
+  //      delay(1); // very important !!!
+  //      rolls = 0;
+  //      if (toggle_roll == 0 ) {
+  //        toggle_roll = 1;
+  //      }
+  //      else if (toggle_roll == 1 ) {
+  //        toggle_roll = 0;
+  //      }
+  //
+  //
+  //      Serial.println ("roll changed!!!");
+  //    }
+  //      else {
+  //    rolls = 0;
+  //  }
+  //
+  //
+  //
+  //  }
+  //
+  //
+  //
+  //  if (toggle_roll) {
+  //
+  //
+  //    Serial.println ("roll_a");
+  //    //Serial.println(rolls);
+  //
+  //  } else {
+  //    Serial.println ("roll_b");
+  //
+  //    //Serial.println(rolls);
+  //  }
+
+
+
+
+
+
 
 
   if (current_shake > last_val) {
@@ -619,41 +496,32 @@ void loop() {
   }
 
 
-
-
   if (toggle_shake) {
-
-
+    //Serial.println(shakes);
     if (turend_on) {
       turend_on = false;
-      leds_off();
-      SerialBT.end();
-      Serial.println("bt is off!");
-      delay(1000);
-      //
-      //     if (bt_stop()) {
-      //        Serial.println("bt is off!");
-      //        delay(1000);
-      //      }
-
+      pom_toggle = true;
     }
 
-    //    if (bt_off_once) {
-    //      bt_off_once = false;
-    //      //SerialBT.flush();
-    ////      if (btStop()) {
-    ////        Serial.println("bt is off!");
-    ////        delay(100);
-    ////      }
-    //      bt_once = true;
 
+
+
+    //    if (turend_on) {
+    //      turend_on = false;
+    //      leds_off();
+    //      SerialBT.end();
+    //      Serial.println("bt is off!");
+    //      delay(1000);
+    //
+    //    }
 
   }
   else {
+
+    //Serial.println(shakes);
     if (turend_on == false) {
       turend_on = true;
-      //SerialBT.flush();
-
+      pom_toggle = false;
 
 
       if (SerialBT.begin("The_Rainmaker!")) {
@@ -661,35 +529,9 @@ void loop() {
       }
       delay(1000);
 
-
-
-
-
-
-      //leds_off();
-
-      // esp_deep_sleep_start();
-
     }
 
-    //    if (bt_once) {
-    //
-    //      bt_once = false;
-    //
-    //      turend_on=false;
-    //      //      if (SerialBT.begin("The_Rainmaker!")) {
-    //      //        Serial.println("bt is on!");
-    //      //
-    //      //      }
-    //      //      delay(100);
-    //      //
-    //      //bt_off_once = true;
-    //      //first_boot = false;
-    //
-    //
-    //
-    //      //ESP.restart();
-    //    }
+
 
     if (all_tasks == 0) {
       //fade_leds(0, 9,0);
@@ -733,23 +575,14 @@ void loop() {
         Serial.println("ON is sent!!");
         activated = true;
       }
-      //
-      //      if (string == "B")
-      //
-      //      {
-      //        volt = analogRead(voltpin);
-      //        level = map(volt, 1799, 2383, 0, 100);
-      //        SerialBT.write(level);
-      //      }
+
 
       if (string == "R")
 
       {
-        //ESP.restart();
+
 
         finished_tasks = 0;
-
-
 
         break_time = 0;
         work_time = 0;
@@ -762,15 +595,11 @@ void loop() {
 
         set_led_tasks(finished_tasks, all_tasks, vertical_orient);
 
-
       }
-
-
 
       if (string == "N")
       {
         Serial.println("N");
-        //String msg= String ("B"+finished_tasks);
 
         volt = analogRead(voltpin);
         Serial.println(volt);
@@ -778,7 +607,7 @@ void loop() {
         level = map(volt, 1700, 2383, 0, 100);
         SerialBT.write(level);
 
-        //SerialBT.write('T');
+
         SerialBT.write(finished_tasks);
         SerialBT.write('\n');
 
@@ -800,7 +629,6 @@ void loop() {
       if ((string.toInt() > 0) && (string.toInt() <= 11))
       {
 
-
         if (all_tasks == 0 && finished_tasks == 0 && string.toInt() == 1)  {
           init_timer = millis();
         }
@@ -813,7 +641,6 @@ void loop() {
 
         Serial.println( current);
 
-        //if (state == 0) {
 
         if (current > 155 and current < 180) {
           vertical_orient == 0;
@@ -831,24 +658,15 @@ void loop() {
           set_led_tasks(finished_tasks, all_tasks, vertical_orient);
         }
 
-
         if (current > 85 and current < 105) {
 
           set_led_ratio(break_time, work_time);
 
-
         }
-
-
-
-
-
-
 
         activated = true;
 
 
-        //}
         delay(10);
 
       }
@@ -859,10 +677,7 @@ void loop() {
 
         Serial.println(deletedTask);
         if ((deletedTask + 1) > finished_tasks) {
-          //          finished_tasks--;
-          //          all_tasks--;
-          //        }
-          //        else {
+
           all_tasks--;
         }
         delay(10);
@@ -882,21 +697,13 @@ void loop() {
           activated = false;
         }
 
-
-
         set_led_tasks(finished_tasks, all_tasks, vertical_orient);
-
-        //
       }
 
 
     }
     if (activated) {
       current = map(event.orientation.y, -90, 90, 0, 180);
-
-      //Serial.println(all_tasks);
-
-
 
       if (abs(current - last) > 5) {
         if (start_action == 1 ) {
@@ -913,19 +720,10 @@ void loop() {
 
       }
 
-
-
       if (millis() - action_time > 700 and start_action == 0) {
         Serial.println("action finish!");
         start_action = 1;
-        //Serial.println(abs(current - val_start));
 
-        // work_normal= 160-->175
-        //break= 90-->105
-        //work_upside down=  0-15
-
-
-        //if (abs(current - val_start) > 130 ) {
         if (current > 155 and current < 180) {
           if (state == 1)
           { state_changed = 1;
@@ -952,7 +750,6 @@ void loop() {
 
           }
 
-
           Serial.println("work");
 
           if (state == 0) {
@@ -964,7 +761,7 @@ void loop() {
           }
           state = 0;
           vertical_orient = 1;
-          start_measure = 1;
+
         }
 
         if (current > 85 and current < 105) {
@@ -984,9 +781,6 @@ void loop() {
           Serial.print("all_tasks");
           Serial.println(all_tasks);
 
-
-
-          //Serial.println("work");
 
           if (state_changed) {
             state_changed = 0;
@@ -1009,11 +803,6 @@ void loop() {
           Serial.println(break_time);
 
 
-
-
-
-
-
           if (flipped) {
             flipped = 0;
             Serial.println("finished_task!!");
@@ -1023,17 +812,9 @@ void loop() {
 
             if (finished_tasks == all_tasks) {
               Serial.println("finished all!");
-              //activated=false;
-              //state=1;
-
-
-
-              //set_led_ratio(break_time, work_time);
 
 
             }
-
-
 
             volt = analogRead(voltpin);
             level = map(volt, 1700, 2383, 0, 100);
@@ -1044,21 +825,11 @@ void loop() {
             SerialBT.write(finished_tasks);
             SerialBT.write('\n');
 
-            //set_led_tasks(finished_tasks, all_tasks, vertical_orient);
           }
-
-          //set_led_tasks(finished_tasks, all_tasks, vertical_orient);
-
-
-
 
         }
 
-
         else if (state == 1) {
-          //Serial.println("state_change!");
-          // Serial.println("break");,
-
 
           if (state_changed) {
 
@@ -1083,117 +854,17 @@ void loop() {
           Serial.print("Break_time: ");
           Serial.println(break_time);
 
-
-
-
-          //Serial.println(work_time / 1000);
-
           set_led_ratio(break_time, work_time);
 
-
-          // }
-
-          // else if (state == 1) {
-          //state = 0;
-
-
-          //Serial.println(break_time / 1000);
-
-
-          //}
         }
 
       }
 
-      //}
-
-      //    if (state == 1) {
-      //      break_time += millis() - break_time;
-      //      //if ((millis() - break_time) % 1000 == 0) {
-      //
-      //
-      //      set_led_ratio(break_time, work_time);
-      //      //}
-      //
-      //    }
-      //
-      //    if (state == 0) {
-      //      work_time += millis() - work_start;
-      //      //if ((millis() - break_time) % 1000 == 0) {
-      //
-      //
-      //
-      //      set_led_tasks(finished_tasks);
-      //      //}
-      //
-      //    }
-
-      //delay(100);
-
     }
 
-
-
-    /* New line for the next sample */
-
-
-    /* Wait the specified delay before requesting nex data */
-
-
-
-
-    //  for (int i = 0; i <= 9; i++) {
-    //    leds[i] = CRGB ( 0, 0, 255);
-    //    FastLED.show();
-    //    delay(40);
-    //  }
-    //  for (int i = 9; i >= 0; i--) {
-    //    leds[i] = CRGB ( 0, 255, 0);
-    //    FastLED.show();
-    //    delay(40);
-    //  }
-    //
-    //  for (int i = 0; i <= 9; i++) {
-    //    leds[i] = CRGB ( 255, 0, 0);
-    //    FastLED.show();
-    //    delay(40);
-    //  }
-
-
-
-
-    /* Display the floating point data */
-
-
-
-
   }
+
   if (turend_on) {
-
-//    if (lowBat == false) {
-//
-//      if (millis() % 10000 == 0) {
-//
-//        volt = analogRead(voltpin);
-//        level = map(volt, 1700, 2383, 0, 100);
-//        //SerialBT.write(level);
-//
-//        if (level <= 20) {
-//
-//          lowBat = true;
-//
-//          SerialBT.write(level);
-//          //SerialBT.write('T');
-//          SerialBT.write(finished_tasks);
-//          SerialBT.write('\n');
-//
-//        }
-//      }
-//    }
-
-
-
-
 
     if (all_tasks != 0) {
 
@@ -1209,7 +880,63 @@ void loop() {
     }
 
   }
+  else {
 
+
+    if (pom_toggle) {
+
+      if (work_pom_time < work_pom) {
+        start_break = false;
+        if (start_work) {
+          start_work = false;
+          work_start_pom = millis();
+        }
+
+        work_pom_time = millis() - work_start_pom;
+
+        work_pom_leds = map(work_pom_time, 0, work_pom, 0, 9);
+
+        for (int i = 0; i < work_pom_leds + 1; i++) {
+          leds[i] = CRGB ( 1, 0, 0);
+        }
+
+        for (int i = work_pom_leds + 1; i <= 9; i++) {
+          leds[i] = CRGB ( 0, 0, 0);
+        }
+
+        FastLED.show();
+      }
+      else {
+
+        if (start_break == false) {
+          start_break = true;
+          break_start_pom = millis();
+
+        }
+        break_pom_time = millis() -  break_start_pom;
+
+        // replace with proper flash fade code
+        set_led_tasks(finished_tasks, all_tasks, vertical_orient, true);
+
+        if (break_pom_time >= break_pom)
+        {
+          start_break == false;
+          start_work = true;
+          work_pom_time = 0;
+          break_pom_time = 0;
+          work_pom_leds = 0;
+
+
+        }
+
+
+      }
+
+
+
+
+    }
+  }
 
 
 
