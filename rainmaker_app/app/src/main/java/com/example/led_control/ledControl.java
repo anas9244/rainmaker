@@ -8,6 +8,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
+import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.app.job.JobInfo;
 import android.app.job.JobScheduler;
@@ -25,6 +26,7 @@ import android.content.Intent;
 import android.os.Handler;
 import android.view.View;
 import android.widget.Button;
+import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
@@ -35,9 +37,12 @@ import android.app.ProgressDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.os.AsyncTask;
+import android.widget.ToggleButton;
 
+import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.snackbar.Snackbar;
+import com.google.firebase.analytics.FirebaseAnalytics;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
@@ -53,11 +58,11 @@ import it.xabaras.android.recyclerview.swipedecorator.RecyclerViewSwipeDecorator
 
 public class ledControl extends AppCompatActivity implements DialogTaskClass.DialogListener {
 
-
+    FirebaseAnalytics firebaseAnalytics =FirebaseAnalytics.getInstance(this);
     public int task_n = 0;
     public static String SHARED_PREFS = "sharedPrefs";
 
-
+    ToggleButton toggleButton;
     Button btnBat, btnReset;
     FloatingActionButton floatBtn;
 
@@ -97,6 +102,9 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
     int counter;
     volatile boolean stopWorker;
 
+    String toggle_msg="";
+    String toggle_alert="";
+
 
 
     @Override
@@ -120,6 +128,70 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
         setContentView(R.layout.activity_led_control);
 
         //call the widgtes
+
+        toggleButton= findViewById(R.id.toggleButton);
+        toggleButton.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @SuppressLint("InvalidAnalyticsName")
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+
+                Bundle bundle = new Bundle();
+                bundle.putString("Toggle_pressed", "true");
+                firebaseAnalytics.logEvent("On_off", bundle);
+                if (toggleButton.isChecked()){
+                    toggle_msg="TO";
+                    toggle_alert="On!";
+                }
+                else{
+                    toggle_msg="TF";
+                    toggle_alert="Off!";
+
+                }
+
+                if (btSocket != null) {
+                    if ((btSocket.isConnected()) && (myBluetooth.isEnabled())) {
+
+                        try {
+                            btSocket.getOutputStream().write("".getBytes());
+
+
+
+
+
+
+                            //btSocket.getOutputStream().write("D".toString().getBytes());
+                            btSocket.getOutputStream().write((toggle_msg).getBytes());
+                            msg("Device "+toggle_alert);
+
+
+                        } catch (IOException e) {
+
+
+
+                            msg("Not connected. Please press CONNECT and try again");
+                            recyclerAdapter.notifyDataSetChanged();
+                            textViewTitle.setText("Not connected!");
+                            btnBat.setText("CONNECT");
+                        }
+
+                    } else {
+
+                        msg("Not connected. Please press CONNECT and try again");
+                        recyclerAdapter.notifyDataSetChanged();
+                        textViewTitle.setText("Not connected!");
+                        btnBat.setText("CONNECT");
+                    }
+                }
+                else{
+
+
+                    msg("Not connected. Please press CONNECT and try again");
+                    recyclerAdapter.notifyDataSetChanged();
+                    textViewTitle.setText("Not connected!");
+                    btnBat.setText("CONNECT");
+                }
+            }
+        });
 
 
         imageViewBat = findViewById(R.id.imageViewBat);

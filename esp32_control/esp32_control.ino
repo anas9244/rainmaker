@@ -110,6 +110,8 @@ void fade_leds(int start_led, int end_led, bool pos, bool pom)
   else {
     interval = 60;
   }
+
+
   if (pos == 0) {
 
     if (end_led == 0) {
@@ -296,6 +298,57 @@ int work_pom_leds;
 bool toggle_flip = 0;
 
 
+bool toogleView= 0; // 0 for tasks, 1 for pom
+
+bool truned_on=true;
+
+void showPom(bool pos)
+{
+
+
+  //leds_manage(1,0,work_pom_leds,pos, true);
+
+
+  if (pos == 0) {
+    for (int i = 0; i < work_pom_leds + 1; i++) {
+            leds[i] = CRGB ( 1, 0, 0);
+          }
+
+          for (int i = work_pom_leds + 1; i <= 9; i++) {
+            leds[i] = CRGB ( 0, 0, 0);
+          }
+  }
+  else if (pos == 1) {
+
+
+
+    for (int i = 9; i > 9-(work_pom_leds+1) ; i--) {
+        leds[i] = CRGB ( 1, 0, 0);
+      }
+
+      for (int i = 9-(work_pom_leds+1); i >= 0; i--) {
+        leds[i] = CRGB ( 0, 0, 0);
+      }
+
+////////////////////
+
+  }
+
+  FastLED.show();
+
+
+
+// for (int i = 0; i < work_pom_leds + 1; i++) {
+//         leds[i] = CRGB ( 1, 0, 0);
+//       }
+
+//       for (int i = work_pom_leds + 1; i <= 9; i++) {
+//         leds[i] = CRGB ( 0, 0, 0);
+//       }
+
+//       FastLED.show();
+
+}
 
 
 void loop() {
@@ -303,14 +356,14 @@ void loop() {
   sensors_event_t event;
   bno.getEvent(&event);
 
-  current_shake = map(event.orientation.y, -90, 90, 0, 180);
+  
 
   //Serial.println(event.orientation.y);
 
 
   //  current_roll = map(event.orientation.x, 0, 360, 0, 100);
-  //
-  //
+  
+  
   //  if (current_roll > last_val_roll) {
   //    if (roll_direct == 0 and abs(current_roll - last_roll) > 5 ) {
   //      Serial.println (rolls);
@@ -319,7 +372,7 @@ void loop() {
   //      last_roll = current_roll;
   //    }
   //  }
-  //
+  
   //  if (current_roll < last_val_roll) {
   //    if (roll_direct == 1 and abs(current_roll - last_roll ) > 5 ) {
   //      Serial.println (rolls);
@@ -328,18 +381,18 @@ void loop() {
   //      last_roll = current_roll;
   //    }
   //  }
-  //
-  //
+  
+  
   //  last_val_roll = current_roll;
-  //
+  
   //  if (rolls == 1) {
   //    roll_time = millis();
   //  }
-  //
+  
   // if (rolls == 2)  {
   //  if  (millis() - roll_time < 300) {
-  //
-  //
+  
+  
   //      delay(1); // very important !!!
   //      rolls = 0;
   //      if (toggle_roll == 0 ) {
@@ -348,38 +401,42 @@ void loop() {
   //      else if (toggle_roll == 1 ) {
   //        toggle_roll = 0;
   //      }
-  //
-  //
+  
+  
   //      Serial.println ("roll changed!!!");
   //    }
   //      else {
   //    rolls = 0;
   //  }
-  //
-  //
-  //
+  
+  
+  
   //  }
-  //
-  //
-  //
+  
+  
+  
   //  if (toggle_roll) {
-  //
-  //
+  //   //toogleView=1;
+  //   showPom();
+  
+  
   //    Serial.println ("roll_a");
   //    //Serial.println(rolls);
-  //
+  
   //  } else {
+  //   toogleView=0;
+  //   set_led_tasks(finished_tasks, all_tasks, vertical_orient, false);
   //    Serial.println ("roll_b");
-  //
+  
   //    //Serial.println(rolls);
   //  }
 
 
 
 
+if (truned_on){
 
-
-
+current_shake = map(event.orientation.y, -90, 90, 0, 180);
 
   if (current_shake > last_val) {
     if (shake_direct == 0 and abs(current_shake - last_shake) > 8 ) {
@@ -414,15 +471,10 @@ void loop() {
       Serial.println("finished_task!!");
       if (finished_tasks < all_tasks) {
         finished_tasks++;
-      }
 
-      if (finished_tasks == all_tasks) {
-        Serial.println("finished all!");
+        set_led_tasks(finished_tasks, all_tasks, vertical_orient, false);
 
-
-      }
-
-      volt = analogRead(voltpin);
+        volt = analogRead(voltpin);
       level = map(volt, 1700, 2383, 0, 100);
       //SerialBT.write(level);
 
@@ -431,6 +483,18 @@ void loop() {
       SerialBT.write(finished_tasks);
       SerialBT.write('\n');
 
+      delay(2000);
+
+      }
+
+      if (finished_tasks == all_tasks) {
+        Serial.println("finished all!");
+
+
+      }
+
+      
+
 
       Serial.println ("shaking");
     }
@@ -438,6 +502,7 @@ void loop() {
   else {
     shakes = 0;
   }
+}
 
 
 
@@ -452,7 +517,10 @@ void loop() {
 
 
   if (all_tasks == 0) {
+    pom_toggle=false;
     //fade_leds(0, 9,0);
+     activated = false;
+     toggle_flip = false;
   }
   else {
     activated = true;
@@ -491,6 +559,7 @@ void loop() {
 
     {
       Serial.println("ON is sent!!");
+      truned_on=true;
       activated = true;
     }
 
@@ -532,17 +601,21 @@ void loop() {
     if (string == "TF")
     {
       Serial.println("off is sent!");
+      truned_on=false;
+      activated=false;
+      leds_off();
 
-      for (int i = 0; i <= 9; i++) {
-        leds[i] = CRGB ( 0, 0, 0);
-      }
-      FastLED.show();
 
-      activated = false;
+      //activated = false;
     }
 
     if ((string.toInt() > 0) && (string.toInt() <= 11))
     {
+
+      if (all_tasks ==0){
+
+        flipped=0;
+      }
 
 
 
@@ -559,7 +632,7 @@ void loop() {
         vertical_orient == 0;
         Serial.println("straigght !!");
 
-        set_led_tasks(finished_tasks, all_tasks, vertical_orient);
+        set_led_tasks(finished_tasks, all_tasks, vertical_orient,false);
       }
 
       if (current > 0 and current < 20) {
@@ -568,7 +641,7 @@ void loop() {
         Serial.println("upside down !!");
 
 
-        set_led_tasks(finished_tasks, all_tasks, vertical_orient);
+        set_led_tasks(finished_tasks, all_tasks, vertical_orient,false);
       }
 
       if (current > 85 and current < 105) {
@@ -608,6 +681,8 @@ void loop() {
 
 
   }
+
+  if (truned_on){
   if (activated) {
     current = map(event.orientation.y, -90, 90, 0, 180);
 
@@ -692,9 +767,6 @@ void loop() {
 
 
 
-
-
-
         if (flipped) {
           flipped = 0;
 
@@ -709,6 +781,7 @@ void loop() {
         }
 
         if (toggle_flip) {
+          Serial.println("pom on !!!!!!!!!!!!!");
           pom_toggle = true;
         }
         else {
@@ -721,22 +794,7 @@ void loop() {
 
     }
 
-  }
-
-
-
-
-
-
-
-
-
-
-
-
-  if (pom_toggle) {
-
-
+    if (pom_toggle) {
 
     if (work_pom_time < work_pom) {
       start_break = false;
@@ -749,15 +807,20 @@ void loop() {
 
       work_pom_leds = map(work_pom_time, 0, work_pom, 0, 9);
 
-      for (int i = 0; i < work_pom_leds + 1; i++) {
-        leds[i] = CRGB ( 1, 0, 0);
-      }
+      // for (int i = 0; i < work_pom_leds + 1; i++) {
+      //   leds[i] = CRGB ( 1, 0, 0);
+      // }
 
-      for (int i = work_pom_leds + 1; i <= 9; i++) {
-        leds[i] = CRGB ( 0, 0, 0);
-      }
+      // for (int i = work_pom_leds + 1; i <= 9; i++) {
+      //   leds[i] = CRGB ( 0, 0, 0);
+      // }
 
-      FastLED.show();
+      // FastLED.show();
+      showPom(vertical_orient);
+
+  
+
+
     }
     else {
 
@@ -778,22 +841,29 @@ void loop() {
         work_pom_time = 0;
         break_pom_time = 0;
         work_pom_leds = 0;
-        
-
-
-
-
+       
+  
       }
     }
   }
   else {
-
-
-
-
-
+      start_break == false;
+        start_work = true;
+        work_pom_time = 0;
+        break_pom_time = 0;
+        work_pom_leds = 0;
 
     set_led_tasks(finished_tasks, all_tasks, vertical_orient, false);
   }
+
+  }
+
+
+else{
+
+set_led_tasks(finished_tasks, all_tasks, vertical_orient, false);
+} 
+}
+  
 
 }

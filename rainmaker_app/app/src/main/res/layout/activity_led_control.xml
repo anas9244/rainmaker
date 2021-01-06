@@ -55,6 +55,19 @@
             android:layout_toEndOf="@id/textViewBat"
             app:srcCompat="@mipmap/bat_full" />
 
+        <ToggleButton
+            android:id="@+id/toggleButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="5dp"
+            android:checked="true"
+            android:text="ToggleButton"
+
+
+            android:background="@drawable/laout_bt_bg"
+            android:foreground="@drawable/ripple_bg"
+            android:textColor="#B1B1B1"/>
+
         <Button
             android:id="@+id/btnReset"
             android:layout_width="wrap_content"
@@ -84,6 +97,8 @@
             android:paddingEnd="15dp"
             android:text="Reconnect"
             android:textColor="#B1B1B1" />
+
+
 
 
     </RelativeLayout>
