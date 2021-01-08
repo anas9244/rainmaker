@@ -24,6 +24,7 @@ import android.os.Bundle;
 import android.bluetooth.BluetoothSocket;
 import android.content.Intent;
 import android.os.Handler;
+import android.provider.Settings;
 import android.view.View;
 import android.widget.Button;
 import android.widget.CompoundButton;
@@ -49,6 +50,7 @@ import com.google.gson.reflect.TypeToken;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
@@ -59,6 +61,12 @@ import it.xabaras.android.recyclerview.swipedecorator.RecyclerViewSwipeDecorator
 public class ledControl extends AppCompatActivity implements DialogTaskClass.DialogListener {
 
     FirebaseAnalytics firebaseAnalytics =FirebaseAnalytics.getInstance(this);
+
+
+
+    private static String userID = null;
+    private static final String PREF_UNIQUE_ID = "PREF_UNIQUE_ID";
+
     public int task_n = 0;
     public static String SHARED_PREFS = "sharedPrefs";
 
@@ -104,7 +112,7 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
 
     String toggle_msg="";
     String toggle_alert="";
-
+    String androidId;
 
 
     @Override
@@ -128,6 +136,11 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
         setContentView(R.layout.activity_led_control);
 
         //call the widgtes
+         androidId = Settings.Secure.getString(getContentResolver(),
+                Settings.Secure.ANDROID_ID);
+        //msg(androidId);
+        firebaseAnalytics.setUserId(androidId);
+
 
         toggleButton= findViewById(R.id.toggleButton);
         toggleButton.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
@@ -136,8 +149,9 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
 
                 Bundle bundle = new Bundle();
-                bundle.putString("Toggle_pressed", "true");
-                firebaseAnalytics.logEvent("On_off", bundle);
+                bundle.putBoolean("state",toggleButton.isChecked());
+                firebaseAnalytics.logEvent("ToggleButton", bundle);
+
                 if (toggleButton.isChecked()){
                     toggle_msg="TO";
                     toggle_alert="On!";
@@ -147,6 +161,8 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
                     toggle_alert="Off!";
 
                 }
+
+
 
                 if (btSocket != null) {
                     if ((btSocket.isConnected()) && (myBluetooth.isEnabled())) {
@@ -275,7 +291,7 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
                     if (btSocket.isConnected() && myBluetooth.isEnabled()) {
                         new AlertDialog.Builder(ledControl.this)
                                 .setTitle("Reset?")
-                                .setMessage("Your progress and work/break time will be reset. Are you sure?")
+                                .setMessage("Your progress will be reset. Are you sure?")
                                 .setIcon(android.R.drawable.ic_dialog_alert)
                                 .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
 
@@ -552,56 +568,6 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
         finish(); //return to the first layout
     }
 
-    public boolean ping(){
-        boolean alive = false;
-
-        if (btSocket!=null) {
-
-            if (btSocket.isConnected() && (myBluetooth.isEnabled())) {
-                try {
-
-                    btSocket.getOutputStream().write("N".getBytes());
-
-                    int bytesAvailable = btSocket.getInputStream().available();
-                    if (bytesAvailable > 0) {
-
-                        alive= true;
-
-                    }
-
-
-
-                } catch (Exception e) {
-
-                    // ADD THIS TO SEE ANY ERROR
-                    msg("Not connected. Please press CONNECT and try again");
-                    textViewTitle.setText("Not connected!");
-                    btnBat.setText("CONNECT");
-                }
-
-
-
-
-                //recyclerAdapter.notifyDataSetChanged();
-            } else {
-
-                msg("Not connected. Please press CONNECT and try again");
-                textViewTitle.setText("Not connected!");
-                btnBat.setText("CONNECT");
-
-
-            }
-        }
-        else{
-            msg("Not connected. Please press CONNECT and try again");
-            textViewTitle.setText("Not connected!");
-            btnBat.setText("CONNECT");
-
-        }
-
-
-        return alive;
-    }
 
     public void Refresh(final boolean once) {
         if (btSocket!=null) {
@@ -648,6 +614,8 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
                                                     public void run() {
 
                                                         if (encodedBytes.length != 1) {
+
+                                                            // message contains in order: bat lvl, finished tasks,
                                                             //msg(data);
 
                                                             //int splitter= data.indexOf('T');
@@ -727,9 +695,70 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
                                                                     multiAutoCompleteTextView.setVisibility(View.GONE);
 
                                                                 }
+                                                            }
 
+                                                            if (Arrays.asList(encodedBytes).contains('f')){
+                                                                int list_index= Arrays.asList(encodedBytes).indexOf('f');
+                                                                msg("Finished duration"+ String.valueOf(encodedBytes[list_index+1]));
 
                                                             }
+
+
+                                                            if (Arrays.asList(encodedBytes).contains('e')){
+                                                                //int list_index= Arrays.asList(encodedBytes).indexOf('e');
+                                                                //msg("Finished duration"+ String.valueOf(encodedBytes[list_index+1]));
+
+                                                            }
+
+                                                            if (Arrays.asList(encodedBytes).contains('s')){
+                                                                int list_index= Arrays.asList(encodedBytes).indexOf('s');
+
+
+                                                                int pom_start_time = encodedBytes[list_index+1];
+                                                                msg("Pom duration"+ String.valueOf(encodedBytes[list_index+1]));
+
+                                                                Bundle bundle = new Bundle();
+                                                                bundle.putInt("duration_of_start", pom_start_time);
+                                                                firebaseAnalytics.logEvent("pom_started", bundle);
+
+                                                            }
+
+
+                                                            /*if (encodedBytes.length >2) {
+                                                                if (encodedBytes[2]=='f'){
+                                                                    msg("Finished duration"+ String.valueOf(encodedBytes[3]));
+
+                                                                    if (encodedBytes.length > 4){
+                                                                        if (encodedBytes[4]=='s'){
+
+                                                                            int pom_start_time = encodedBytes[5];
+                                                                            msg("Pom duration"+ String.valueOf(encodedBytes[5]));
+
+                                                                            Bundle bundle = new Bundle();
+                                                                            bundle.putInt("duration_of_start", pom_start_time);
+                                                                            firebaseAnalytics.logEvent("pom_started", bundle);
+                                                                        }
+                                                                    }
+                                                                }
+                                                                else if (encodedBytes[2]=='s'){
+
+                                                                    int pom_start_time = encodedBytes[3];
+                                                                    msg("Pom duration"+ String.valueOf(encodedBytes[3]));
+                                                                    Bundle bundle = new Bundle();
+                                                                    bundle.putInt("duration_of_start", pom_start_time);
+                                                                    firebaseAnalytics.logEvent("pom_started", bundle);
+
+                                                                    if (encodedBytes.length > 4){
+                                                                        if (encodedBytes[4]=='f'){
+                                                                            msg("Finished duration"+ String.valueOf(encodedBytes[5]));
+
+                                                                        }
+                                                                    }
+
+                                                                }
+                                                            }*/
+
+
 
                                                         }
 
@@ -826,6 +855,11 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
                         saveData();
 
                         btSocket.getOutputStream().write(String.valueOf(tasksList.size() + finishedTasksList.size()).getBytes());
+                        Bundle bundle = new Bundle();
+                        bundle.putString("name", taskName);
+                        bundle.putString("user_id", androidId);
+                        firebaseAnalytics.logEvent("task_added", bundle);
+
 
                     } catch (IOException e) {
 
@@ -952,6 +986,21 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
         }
     }
 
+    public synchronized String getUserId() {
+        if (userID == null) {
+            SharedPreferences sharedPreferences = getSharedPreferences(SHARED_PREFS, MODE_PRIVATE);
+
+            userID = sharedPreferences.getString(PREF_UNIQUE_ID, null);
+            if (userID == null) {
+                userID = UUID.randomUUID().toString();
+                SharedPreferences.Editor editor = sharedPreferences.edit();
+                editor.putString(PREF_UNIQUE_ID, userID);
+                editor.commit();
+            }
+        }
+        return userID;
+    }
+
 
     private void saveData() {
         SharedPreferences sharedPreferences = getSharedPreferences(SHARED_PREFS, MODE_PRIVATE);
@@ -961,6 +1010,7 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
         String json = gson.toJson(tasksList);
         String jsonFinished = gson.toJson(finishedTasksList);
         String bat = textViewBat.getText().toString();
+
 
 
         SharedPreferences.Editor editor = sharedPreferences.edit();
@@ -1001,6 +1051,7 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
             finishedTasksList = new ArrayList<>();
 
         }
+
 
 
         //recyclerAdapter.notifyDataSetChanged();}

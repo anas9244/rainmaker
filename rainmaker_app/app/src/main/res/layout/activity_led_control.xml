@@ -112,7 +112,7 @@
         android:background="@color/colorPrimaryDark"
         android:gravity="center"
         android:padding="5dp"
-        android:text="Congrats! You finished all your tasks. \n Work/break time tracking is stopped."
+        android:text="Congrats! You finished all your tasks."
         android:textColor="@color/colorAccent"
         android:textSize="18sp"
         android:visibility="gone" />

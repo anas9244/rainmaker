@@ -43,7 +43,48 @@ CRGB leds[NUM_LEDS];
 int all_tasks = 0;
 int finished_tasks = 0;
 
+void tasks_leds(int start_led, int end_led, bool pos){
+if (pos == 0) {
 
+
+  for (int i = 0; i < start_led; i++) {
+        leds[i] = CRGB ( 0, 0, 40);
+      }
+    
+      for (int l = start_led; l < end_led; l++) {
+        leds[l] = CRGB ( 40, 10, 0);
+      }
+
+      for (int i = end_led; i <= 9; i++) {
+        leds[i] = CRGB ( 0, 0, 0);
+      }
+  
+
+    
+  }
+  else if (pos == 1) {
+
+      for (int i = 9; i > 9-start_led; i--) {
+        leds[i] = CRGB ( 0, 0, 40);
+      }
+  
+      for (int l = 9-start_led; l > 9-end_led; l--) {
+        leds[l] = CRGB ( 40, 10, 0);
+      }
+  
+
+      for (int i = (9-end_led); i >= 0; i--) {
+        leds[i] = CRGB ( 0, 0, 0);
+      }
+   
+
+
+    
+  }
+
+  FastLED.show();
+
+}
 // hepler function for fade_leds function that will change the LEDs based on the given range
 void leds_manage(int i, int start_led, int end_led, bool pos, bool pom) {
   if (pos == 0) {
@@ -191,6 +232,9 @@ void set_led_tasks(int  finished, int all_tasks, bool vertical_orient, bool pom 
 
 
 
+
+
+
 BluetoothSerial SerialBT;
 
 void setup() {
@@ -250,7 +294,7 @@ bool start_action = 1;
 int val_start;
 bool state = 0; // 0 for work, 1 for break
 bool activated = false;
-bool vertical_orient; // 0 for upright, 1 for upsidedown
+bool vertical_orient=0; // 0 for upright, 1 for upsidedown
 bool flipped;
 int last_val = 0;
 
@@ -302,53 +346,18 @@ bool toogleView= 0; // 0 for tasks, 1 for pom
 
 bool truned_on=true;
 
-void showPom(bool pos)
-{
+unsigned long on_time_start;
 
+unsigned long pom_time_start;
+bool pom_time_logged=false;
 
-  //leds_manage(1,0,work_pom_leds,pos, true);
-
-
-  if (pos == 0) {
-    for (int i = 0; i < work_pom_leds + 1; i++) {
-            leds[i] = CRGB ( 1, 0, 0);
-          }
-
-          for (int i = work_pom_leds + 1; i <= 9; i++) {
-            leds[i] = CRGB ( 0, 0, 0);
-          }
-  }
-  else if (pos == 1) {
+unsigned long pom_time_end;
+bool pom_end_logged=false;
 
 
 
-    for (int i = 9; i > 9-(work_pom_leds+1) ; i--) {
-        leds[i] = CRGB ( 1, 0, 0);
-      }
-
-      for (int i = 9-(work_pom_leds+1); i >= 0; i--) {
-        leds[i] = CRGB ( 0, 0, 0);
-      }
-
-////////////////////
-
-  }
-
-  FastLED.show();
-
-
-
-// for (int i = 0; i < work_pom_leds + 1; i++) {
-//         leds[i] = CRGB ( 1, 0, 0);
-//       }
-
-//       for (int i = work_pom_leds + 1; i <= 9; i++) {
-//         leds[i] = CRGB ( 0, 0, 0);
-//       }
-
-//       FastLED.show();
-
-}
+bool finished_time_logged=false;
+unsigned long finished_time;
 
 
 void loop() {
@@ -356,7 +365,7 @@ void loop() {
   sensors_event_t event;
   bno.getEvent(&event);
 
-  
+
 
   //Serial.println(event.orientation.y);
 
@@ -465,31 +474,31 @@ current_shake = map(event.orientation.y, -90, 90, 0, 180);
 
   if  (millis() - shake_time < 500) {
 
+
+
     if (shakes == 4)  {
       delay(500); // very important !!!
       shakes = 0;
-      Serial.println("finished_task!!");
+      Serial.println("all finished_task!!");
       if (finished_tasks < all_tasks) {
         finished_tasks++;
 
-        set_led_tasks(finished_tasks, all_tasks, vertical_orient, false);
+        tasks_leds(finished_tasks, all_tasks, vertical_orient);
+        finished_time= (millis() - on_time_start) / 1000;
+        finished_time_logged=true;
 
-        volt = analogRead(voltpin);
-      level = map(volt, 1700, 2383, 0, 100);
-      //SerialBT.write(level);
 
-      SerialBT.write(level);
-      //SerialBT.write('T');
-      SerialBT.write(finished_tasks);
-      SerialBT.write('\n');
-
-      delay(2000);
+        delay(2000);
 
       }
 
       if (finished_tasks == all_tasks) {
         Serial.println("finished all!");
-
+        //flipped=1;
+        pom_toggle=false;
+        toggle_flip = false;
+        
+      
 
       }
 
@@ -561,6 +570,7 @@ current_shake = map(event.orientation.y, -90, 90, 0, 180);
       Serial.println("ON is sent!!");
       truned_on=true;
       activated = true;
+      //on_time_start=millis();
     }
 
 
@@ -570,8 +580,6 @@ current_shake = map(event.orientation.y, -90, 90, 0, 180);
 
 
       finished_tasks = 0;
-
-
 
 
       all_tasks = 0;
@@ -585,14 +593,36 @@ current_shake = map(event.orientation.y, -90, 90, 0, 180);
     {
       Serial.println("N");
 
+
+
       volt = analogRead(voltpin);
-      Serial.println(volt);
-
+      
       level = map(volt, 1700, 2383, 0, 100);
+      
       SerialBT.write(level);
-
-
       SerialBT.write(finished_tasks);
+
+      if (pom_time_logged){
+        pom_time_logged=false;
+        SerialBT.write('s');
+        SerialBT.write(pom_time_start);
+
+      }
+
+      if (pom_end_logged){
+        pom_end_logged=false;
+        SerialBT.write('e');
+        SerialBT.write(pom_time_end);
+
+      }
+
+      if (finished_time_logged){
+    
+        finished_time_logged=false;
+        SerialBT.write('f');
+        SerialBT.write(finished_time);
+
+      }
       SerialBT.write('\n');
 
     }
@@ -617,6 +647,12 @@ current_shake = map(event.orientation.y, -90, 90, 0, 180);
         flipped=0;
       }
 
+      if (all_tasks == 0 && finished_tasks == 0 && string.toInt() == 1)  {
+
+        on_time_start=millis();
+
+      }
+
 
 
       all_tasks = string.toInt();
@@ -632,7 +668,7 @@ current_shake = map(event.orientation.y, -90, 90, 0, 180);
         vertical_orient == 0;
         Serial.println("straigght !!");
 
-        set_led_tasks(finished_tasks, all_tasks, vertical_orient,false);
+        
       }
 
       if (current > 0 and current < 20) {
@@ -641,13 +677,15 @@ current_shake = map(event.orientation.y, -90, 90, 0, 180);
         Serial.println("upside down !!");
 
 
-        set_led_tasks(finished_tasks, all_tasks, vertical_orient,false);
+        
       }
 
       if (current > 85 and current < 105) {
 
         // if in break mode (horizontal)
         //set_led_ratio(break_time, work_time);
+        pom_toggle=false;
+        //tasks_leds(finished_tasks,all_tasks,vertical_orient);
       }
 
       activated = true;
@@ -676,7 +714,7 @@ current_shake = map(event.orientation.y, -90, 90, 0, 180);
         activated = false;
       }
 
-      set_led_tasks(finished_tasks, all_tasks, vertical_orient);
+      tasks_leds(finished_tasks, all_tasks, vertical_orient);
     }
 
 
@@ -754,6 +792,7 @@ current_shake = map(event.orientation.y, -90, 90, 0, 180);
 
         Serial.println("break");
         state = 1;
+        pom_toggle=false;
       }
 
 
@@ -783,6 +822,10 @@ current_shake = map(event.orientation.y, -90, 90, 0, 180);
         if (toggle_flip) {
           Serial.println("pom on !!!!!!!!!!!!!");
           pom_toggle = true;
+          pom_time_start= (millis() - on_time_start) / 1000;
+          pom_time_logged=true;
+
+
         }
         else {
           pom_toggle = false;
@@ -847,13 +890,20 @@ current_shake = map(event.orientation.y, -90, 90, 0, 180);
     }
   }
   else {
+    if (state == 0 or all_tasks<=finished_tasks){
       start_break == false;
         start_work = true;
         work_pom_time = 0;
         break_pom_time = 0;
         work_pom_leds = 0;
 
-    set_led_tasks(finished_tasks, all_tasks, vertical_orient, false);
+        pom_time_end= (millis()/1000)- pom_time_start;
+        pom_end_logged=true;
+    }
+
+    //set_led_tasks(finished_tasks, all_tasks, vertical_orient, false);
+
+    tasks_leds(finished_tasks,all_tasks,vertical_orient);
   }
 
   }
@@ -865,5 +915,41 @@ set_led_tasks(finished_tasks, all_tasks, vertical_orient, false);
 } 
 }
   
+
+}
+
+
+
+void showPom(bool pos)
+{
+
+  //leds_manage(1,0,work_pom_leds,pos, true);
+  if (pos == 0) {
+    for (int i = 0; i < work_pom_leds + 1; i++) {
+            leds[i] = CRGB ( 1, 0, 0);
+          }
+
+          for (int i = work_pom_leds + 1; i <= 9; i++) {
+            leds[i] = CRGB ( 0, 0, 0);
+          }
+  }
+  else if (pos == 1) {
+
+
+
+    for (int i = 9; i > 9-(work_pom_leds+1) ; i--) {
+        leds[i] = CRGB ( 1, 0, 0);
+      }
+
+      for (int i = 9-(work_pom_leds+1); i >= 0; i--) {
+        leds[i] = CRGB ( 0, 0, 0);
+      }
+
+////////////////////
+
+  }
+
+  FastLED.show();
+
 
 }
