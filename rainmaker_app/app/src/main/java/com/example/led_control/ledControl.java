@@ -1,6 +1,7 @@
 package com.example.led_control;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.res.ResourcesCompat;
 import androidx.recyclerview.widget.ItemTouchHelper;
@@ -19,6 +20,7 @@ import android.content.pm.PackageManager;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
+import android.os.Build;
 import android.os.Bundle;
 
 import android.bluetooth.BluetoothSocket;
@@ -50,6 +52,7 @@ import com.google.gson.reflect.TypeToken;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -99,6 +102,7 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
     BluetoothAdapter myBluetooth = null;
     public static BluetoothSocket btSocket = null;
     public boolean isBtConnected = false;
+
     static final UUID myUUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
 
 
@@ -114,6 +118,7 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
     String toggle_msg="";
     String toggle_alert="";
     String androidId;
+    String session_start_time;
 
 
     @Override
@@ -149,9 +154,7 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
 
-                Bundle bundle = new Bundle();
-                bundle.putBoolean("state",toggleButton.isChecked());
-                firebaseAnalytics.logEvent("ToggleButton", bundle);
+
 
                 if (toggleButton.isChecked()){
                     toggle_msg="TO";
@@ -240,6 +243,7 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
 
                                 //bundle.putString("taskName", textViewTask.getText().toString());
                                 bundle.putBoolean("editMode", false);
+
                                 //bundle.putInt("taskId",position);
 
                                 dialogTaskClass.setArguments(bundle);
@@ -540,6 +544,7 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
                     Bundle bundle = new Bundle();
                     bundle.putString("taskName", textViewTask.getText().toString());
                     bundle.putBoolean("editMode", true);
+                    bundle.putString("session_time", session_start_time);
                     bundle.putInt("taskId", position);
 
                     dialogTaskClass.setArguments(bundle);
@@ -703,32 +708,41 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
                                                             if (contains(encodedBytes,'f')){
 
                                                                 int list_index= find(encodedBytes, (byte) 'f');
-                                                                msg("Finished duration"+ String.valueOf(encodedBytes[list_index+1]));
+                                                                int session_end_time = encodedBytes[list_index+1];
+                                                                msg("session duration: "+ String.valueOf(encodedBytes[list_index+1]));
+
+                                                                Bundle bundle = new Bundle();
+                                                                bundle.putInt("session_ended_after", session_end_time);
+                                                                bundle.putString("session_time", session_start_time);
+                                                                firebaseAnalytics.logEvent("session_ended", bundle);
 
                                                             }
 
 
                                                             if (contains(encodedBytes,'e')){
-                                                                //int list_index= find(encodedBytes, (byte) 'e');
-                                                                //msg("Finished duration"+ String.valueOf(encodedBytes[list_index+1]));
+
+                                                                int list_index= find(encodedBytes, (byte) 'e');
+                                                                int pom_end_time = encodedBytes[list_index+1];
+                                                                msg("Pom duration: "+ String.valueOf(encodedBytes[list_index+1]));
+
+                                                                Bundle bundle = new Bundle();
+                                                                bundle.putInt("pom_duration", pom_end_time);
+                                                                bundle.putString("session_time", session_start_time);
+                                                                firebaseAnalytics.logEvent("pom_ended", bundle);
 
                                                             }
 
                                                             if (contains(encodedBytes,'s')){
                                                                 int list_index= find(encodedBytes, (byte) 's');
-
-
                                                                 int pom_start_time = encodedBytes[list_index+1];
-                                                                msg("Pom duration"+ String.valueOf(encodedBytes[list_index+1]));
+                                                                //msg("Pom duration"+ String.valueOf(encodedBytes[list_index+1]));
 
                                                                 Bundle bundle = new Bundle();
-                                                                bundle.putInt("duration_of_start", pom_start_time);
+                                                                bundle.putInt("duration_from_start", pom_start_time);
+                                                                bundle.putString("session_time", session_start_time);
                                                                 firebaseAnalytics.logEvent("pom_started", bundle);
 
                                                             }
-
-
-
 
 
 
@@ -803,6 +817,7 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
 
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.O)
     @Override
     public void applyText(String taskName, boolean editMode, int taskId) {
 
@@ -820,6 +835,17 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
 
                         btSocket.getOutputStream().write("".getBytes());
                         tasksList.add(taskName);
+                        if (tasksList.size()==1){
+
+                            LocalTime time = LocalTime.now();
+                            session_start_time = time.toString();
+                            msg(time.toString());
+                            Bundle bundle = new Bundle();
+                            bundle.putString("session_time", session_start_time);
+                            bundle.putString("user_id", androidId);
+                            firebaseAnalytics.logEvent("start_session", bundle);
+
+                        }
 
                         //recyclerAdapter.notifyItemInserted(tasksList.size()-1);
                         recyclerAdapter.notifyDataSetChanged();
@@ -830,6 +856,7 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
                         Bundle bundle = new Bundle();
                         bundle.putString("name", taskName);
                         bundle.putString("user_id", androidId);
+                        bundle.putString("session_time", session_start_time);
                         firebaseAnalytics.logEvent("task_added", bundle);
 
 

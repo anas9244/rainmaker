@@ -326,8 +326,8 @@ unsigned long roll_time;
 bool pom_toggle = false;
 bool start_work = true;
 bool start_break = false;
-unsigned long work_pom = 20000;
-unsigned long break_pom = 10000;
+unsigned long work_pom = 1500000; 
+unsigned long break_pom = 300000;
 
 unsigned long break_pom_time;
 unsigned long work_pom_time;
@@ -486,7 +486,7 @@ current_shake = map(event.orientation.y, -90, 90, 0, 180);
         
 
 
-        delay(2000);
+        delay(1000);
 
       }
 
@@ -499,7 +499,7 @@ current_shake = map(event.orientation.y, -90, 90, 0, 180);
         activated=false;
 
         tasks_leds(finished_tasks, all_tasks, vertical_orient);
-        finished_time= (millis() - on_time_start) / 1000;
+        finished_time= (millis() - on_time_start) / 60000;
         finished_time_logged=true;
         
       
@@ -823,10 +823,10 @@ current_shake = map(event.orientation.y, -90, 90, 0, 180);
 
         }
 
-        if (toggle_flip) {
+        if (toggle_flip and activated) {
           Serial.println("pom on !!!!!!!!!!!!!");
           pom_toggle = true;
-          pom_time_start= (millis() - on_time_start) / 1000;
+          pom_time_start= (millis() - on_time_start) / 60000;
           pom_time_logged=true;
 
 
@@ -842,6 +842,9 @@ current_shake = map(event.orientation.y, -90, 90, 0, 180);
     }
 
     if (pom_toggle) {
+      if (all_tasks==finished_tasks and all_tasks!=0 and finished_tasks!=0){
+        pom_time_end= (millis()/60000)- pom_time_start;
+        pom_end_logged=true;}
 
     if (work_pom_time < work_pom) {
       start_break = false;
@@ -901,8 +904,7 @@ current_shake = map(event.orientation.y, -90, 90, 0, 180);
         break_pom_time = 0;
         work_pom_leds = 0;
 
-        pom_time_end= (millis()/1000)- pom_time_start;
-        pom_end_logged=true;
+
     }
 
     //set_led_tasks(finished_tasks, all_tasks, vertical_orient, false);
