@@ -40,6 +40,7 @@ import android.bluetooth.BluetoothDevice;
 import android.os.AsyncTask;
 import android.widget.ToggleButton;
 
+import com.google.android.gms.common.util.ArrayUtils;
 import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.snackbar.Snackbar;
@@ -697,21 +698,24 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
                                                                 }
                                                             }
 
-                                                            if (Arrays.asList(encodedBytes).contains('f')){
-                                                                int list_index= Arrays.asList(encodedBytes).indexOf('f');
+
+
+                                                            if (contains(encodedBytes,'f')){
+
+                                                                int list_index= find(encodedBytes, (byte) 'f');
                                                                 msg("Finished duration"+ String.valueOf(encodedBytes[list_index+1]));
 
                                                             }
 
 
-                                                            if (Arrays.asList(encodedBytes).contains('e')){
-                                                                //int list_index= Arrays.asList(encodedBytes).indexOf('e');
+                                                            if (contains(encodedBytes,'e')){
+                                                                //int list_index= find(encodedBytes, (byte) 'e');
                                                                 //msg("Finished duration"+ String.valueOf(encodedBytes[list_index+1]));
 
                                                             }
 
-                                                            if (Arrays.asList(encodedBytes).contains('s')){
-                                                                int list_index= Arrays.asList(encodedBytes).indexOf('s');
+                                                            if (contains(encodedBytes,'s')){
+                                                                int list_index= find(encodedBytes, (byte) 's');
 
 
                                                                 int pom_start_time = encodedBytes[list_index+1];
@@ -724,39 +728,7 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
                                                             }
 
 
-                                                            /*if (encodedBytes.length >2) {
-                                                                if (encodedBytes[2]=='f'){
-                                                                    msg("Finished duration"+ String.valueOf(encodedBytes[3]));
 
-                                                                    if (encodedBytes.length > 4){
-                                                                        if (encodedBytes[4]=='s'){
-
-                                                                            int pom_start_time = encodedBytes[5];
-                                                                            msg("Pom duration"+ String.valueOf(encodedBytes[5]));
-
-                                                                            Bundle bundle = new Bundle();
-                                                                            bundle.putInt("duration_of_start", pom_start_time);
-                                                                            firebaseAnalytics.logEvent("pom_started", bundle);
-                                                                        }
-                                                                    }
-                                                                }
-                                                                else if (encodedBytes[2]=='s'){
-
-                                                                    int pom_start_time = encodedBytes[3];
-                                                                    msg("Pom duration"+ String.valueOf(encodedBytes[3]));
-                                                                    Bundle bundle = new Bundle();
-                                                                    bundle.putInt("duration_of_start", pom_start_time);
-                                                                    firebaseAnalytics.logEvent("pom_started", bundle);
-
-                                                                    if (encodedBytes.length > 4){
-                                                                        if (encodedBytes[4]=='f'){
-                                                                            msg("Finished duration"+ String.valueOf(encodedBytes[5]));
-
-                                                                        }
-                                                                    }
-
-                                                                }
-                                                            }*/
 
 
 
@@ -1075,6 +1047,32 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
             msg("job failed :(");
         }
 
+    }
+
+
+    public static boolean contains(final byte[] array, final int v) {
+
+        boolean result = false;
+
+        for(int i : array){
+            if(i == v){
+                result = true;
+                break;
+            }
+        }
+
+        return result;
+    }
+
+
+
+    public static int find(byte[] a, byte target)
+    {
+        for (int i = 0; i < a.length; i++)
+            if (a[i] == target)
+                return i;
+
+        return -1;
     }
 
 

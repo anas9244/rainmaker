@@ -479,13 +479,11 @@ current_shake = map(event.orientation.y, -90, 90, 0, 180);
     if (shakes == 4)  {
       delay(500); // very important !!!
       shakes = 0;
-      Serial.println("all finished_task!!");
+      Serial.println("finished_task!!");
       if (finished_tasks < all_tasks) {
         finished_tasks++;
 
-        tasks_leds(finished_tasks, all_tasks, vertical_orient);
-        finished_time= (millis() - on_time_start) / 1000;
-        finished_time_logged=true;
+        
 
 
         delay(2000);
@@ -497,6 +495,12 @@ current_shake = map(event.orientation.y, -90, 90, 0, 180);
         //flipped=1;
         pom_toggle=false;
         toggle_flip = false;
+
+        activated=false;
+
+        tasks_leds(finished_tasks, all_tasks, vertical_orient);
+        finished_time= (millis() - on_time_start) / 1000;
+        finished_time_logged=true;
         
       
 
