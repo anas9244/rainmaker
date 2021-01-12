@@ -142,10 +142,12 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
         setContentView(R.layout.activity_led_control);
 
         //call the widgtes
-         androidId = Settings.Secure.getString(getContentResolver(),
-                Settings.Secure.ANDROID_ID);
-        //msg(androidId);
-        firebaseAnalytics.setUserId(androidId);
+//         androidId = Settings.Secure.getString(getContentResolver(),
+//                Settings.Secure.ANDROID_ID);
+
+        userID=getUserId();
+        msg(userID);
+        firebaseAnalytics.setUserId(userID);
 
 
         toggleButton= findViewById(R.id.toggleButton);
@@ -175,13 +177,8 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
                             btSocket.getOutputStream().write("".getBytes());
 
 
-
-
-
-
                             //btSocket.getOutputStream().write("D".toString().getBytes());
                             btSocket.getOutputStream().write((toggle_msg).getBytes());
-                            msg("Device "+toggle_alert);
 
 
                         } catch (IOException e) {
@@ -735,7 +732,7 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
                                                             if (contains(encodedBytes,'s')){
                                                                 int list_index= find(encodedBytes, (byte) 's');
                                                                 int pom_start_time = encodedBytes[list_index+1];
-                                                                //msg("Pom duration"+ String.valueOf(encodedBytes[list_index+1]));
+                                                                msg("Pom started after: "+ String.valueOf(encodedBytes[list_index+1]));
 
                                                                 Bundle bundle = new Bundle();
                                                                 bundle.putInt("duration_from_start", pom_start_time);
@@ -789,6 +786,7 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
                 msg("Not connected. Please press CONNECT and try again");
                 textViewTitle.setText("Not connected!");
                 btnBat.setText("CONNECT");
+
 
 
             }
@@ -894,8 +892,8 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
 
 
                 myBluetooth = BluetoothAdapter.getDefaultAdapter();//get the mobile bluetooth device
-                BluetoothDevice dispositivo = myBluetooth.getRemoteDevice("24:6F:28:80:E4:82");//connects to the device's address and checks if it's available
-                //BluetoothDevice dispositivo = myBluetooth.getRemoteDevice("FC:F5:C4:07:66:5E"); // second prototype
+                //BluetoothDevice dispositivo = myBluetooth.getRemoteDevice("24:6F:28:80:E4:82");//connects to the device's address and checks if it's available
+                BluetoothDevice dispositivo = myBluetooth.getRemoteDevice("FC:F5:C4:07:66:5E"); // second prototype
                 btSocket = dispositivo.createInsecureRfcommSocketToServiceRecord(myUUID);//create a RFCOMM (SPP) connection
                 BluetoothAdapter.getDefaultAdapter().cancelDiscovery();
                 btSocket.connect();//start connection

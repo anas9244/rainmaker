@@ -326,7 +326,7 @@ unsigned long roll_time;
 bool pom_toggle = false;
 bool start_work = true;
 bool start_break = false;
-unsigned long work_pom = 1500000; 
+unsigned long work_pom = 1500000;
 unsigned long break_pom = 300000;
 
 unsigned long break_pom_time;
@@ -358,6 +358,18 @@ bool pom_end_logged=false;
 
 bool finished_time_logged=false;
 unsigned long finished_time;
+
+bool finished_sand=false;
+
+int last_work_pom_led;
+
+unsigned long previousMillis_pom = 0;
+unsigned long interval_pom = 60;
+
+
+
+
+bool pom_enabled=false;
 
 
 void loop() {
@@ -606,17 +618,12 @@ current_shake = map(event.orientation.y, -90, 90, 0, 180);
       SerialBT.write(level);
       SerialBT.write(finished_tasks);
 
-      if (pom_time_logged){
-        pom_time_logged=false;
-        SerialBT.write('s');
-        SerialBT.write(pom_time_start);
 
-      }
 
       if (pom_end_logged){
         pom_end_logged=false;
         SerialBT.write('e');
-        SerialBT.write(pom_time_end);
+        SerialBT.write(pom_time_end/60000);
 
       }
 
@@ -654,6 +661,8 @@ current_shake = map(event.orientation.y, -90, 90, 0, 180);
       if (all_tasks == 0 && finished_tasks == 0 && string.toInt() == 1)  {
 
         on_time_start=millis();
+        Serial.print("on_time_start_millis: ");
+        Serial.println(on_time_start);
 
       }
 
@@ -826,8 +835,13 @@ current_shake = map(event.orientation.y, -90, 90, 0, 180);
         if (toggle_flip and activated) {
           Serial.println("pom on !!!!!!!!!!!!!");
           pom_toggle = true;
-          pom_time_start= (millis() - on_time_start) / 60000;
-          pom_time_logged=true;
+          unsigned long currentMillis_pom=millis();
+       
+          pom_time_start= (currentMillis_pom);
+
+
+          
+          pom_enabled=true;
 
 
         }
@@ -843,8 +857,17 @@ current_shake = map(event.orientation.y, -90, 90, 0, 180);
 
     if (pom_toggle) {
       if (all_tasks==finished_tasks and all_tasks!=0 and finished_tasks!=0){
-        pom_time_end= (millis()/60000)- pom_time_start;
-        pom_end_logged=true;}
+
+        Serial.print("all_tasks: ");
+        Serial.println(all_tasks);
+
+        Serial.print("finished: ");
+        Serial.println(finished_tasks);
+        unsigned long currentMillis_pom=millis();
+        pom_time_end= currentMillis_pom- pom_time_start;
+
+        pom_end_logged=true;
+      }
 
     if (work_pom_time < work_pom) {
       start_break = false;
@@ -866,7 +889,41 @@ current_shake = map(event.orientation.y, -90, 90, 0, 180);
       // }
 
       // FastLED.show();
-      showPom(vertical_orient);
+
+    //   if (work_pom_leds> last_work_pom_led)
+    //   {
+    //     finished_sand=true;
+
+        
+    //   }
+
+    //   if (finished_sand)
+    //   {
+    //     if (showPom_sand(vertical_orient))
+    //     {
+    //     finished_sand=false;
+    //     last_work_pom_led=work_pom_leds;
+
+    //     }
+
+    //   }
+
+    
+    //   if (finished_sand=false){
+    //   showPom(vertical_orient);
+
+
+    // }
+
+    showPom(vertical_orient);
+
+     
+
+
+
+
+
+    
 
   
 
@@ -879,7 +936,7 @@ current_shake = map(event.orientation.y, -90, 90, 0, 180);
         break_start_pom = millis();
 
       }
-      break_pom_time = millis() -  break_start_pom;
+      break_pom_time = millis()-  break_start_pom;
 
       // replace with proper flash fade code
       set_led_tasks(finished_tasks, all_tasks, vertical_orient, true);
@@ -903,6 +960,22 @@ current_shake = map(event.orientation.y, -90, 90, 0, 180);
         work_pom_time = 0;
         break_pom_time = 0;
         work_pom_leds = 0;
+
+        if (pom_enabled==true){
+          pom_enabled=false;
+          unsigned long currentMillis_pom=millis();
+
+
+        pom_time_end= currentMillis_pom- pom_time_start;
+ 
+        Serial.print("pom start after: ");
+        Serial.println(pom_time_start/60000);
+        Serial.print("pom dur: ");
+        Serial.println(pom_time_end/60000);
+        pom_end_logged=true;}
+
+
+
 
 
     }
@@ -932,12 +1005,12 @@ void showPom(bool pos)
   //leds_manage(1,0,work_pom_leds,pos, true);
   if (pos == 0) {
     for (int i = 0; i < work_pom_leds + 1; i++) {
-            leds[i] = CRGB ( 1, 0, 0);
-          }
+          leds[i] = CRGB ( 1, 0, 0);
+    }
 
-          for (int i = work_pom_leds + 1; i <= 9; i++) {
-            leds[i] = CRGB ( 0, 0, 0);
-          }
+    for (int i = work_pom_leds + 1; i <= 9; i++) {
+      leds[i] = CRGB ( 0, 0, 0);
+    }
   }
   else if (pos == 1) {
 
@@ -947,15 +1020,78 @@ void showPom(bool pos)
         leds[i] = CRGB ( 1, 0, 0);
       }
 
-      for (int i = 9-(work_pom_leds+1); i >= 0; i--) {
-        leds[i] = CRGB ( 0, 0, 0);
-      }
+    for (int i = 9-(work_pom_leds+1); i >= 0; i--) {
+      leds[i] = CRGB ( 0, 0, 0);
+    }
 
 ////////////////////
 
   }
 
   FastLED.show();
+
+
+}
+
+bool showPom_sand(bool pos)
+{
+
+  //leds_manage(1,0,work_pom_leds,pos, true);
+  if (pos == 0) {
+
+    for (int j=9; j >= work_pom_leds;j--)
+    {
+
+        if (millis() - previousMillis_pom >= interval_pom) {
+          leds[j] = CRGB ( 1, 0, 0);
+        
+      for (int i = j-1 ; i >= work_pom_leds; i--) {
+        leds[i] = CRGB ( 0, 0, 0);
+      }
+
+      // for (int i = 0; i < work_pom_leds; i++) {
+      // leds[i] = CRGB ( 1, 0, 0);
+      // }
+
+
+
+      FastLED.show();
+      
+
+      
+
+      if (j==work_pom_leds){
+
+        return true;
+      }
+      else{
+        
+        return false;
+
+      }
+
+        previousMillis = millis();
+      }
+
+      
+      
+
+    }
+
+
+  
+  }
+  else if (pos == 1) {
+
+
+
+    
+
+////////////////////
+
+  }
+
+  
 
 
 }
