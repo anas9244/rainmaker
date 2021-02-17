@@ -49,10 +49,12 @@ import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.analytics.FirebaseAnalytics;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import com.jakewharton.threetenabp.AndroidThreeTen;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
-import java.time.LocalTime;
+//import java.time.LocalTime;
+import org.threeten.bp.LocalTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -125,6 +127,8 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        AndroidThreeTen.init(this);
+
 //        requestWindowFeature(getWindow().FEATURE_NO_TITLE);
 //
 //        getSupportActionBar().hide();
@@ -146,7 +150,7 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
 //                Settings.Secure.ANDROID_ID);
 
         userID=getUserId();
-        msg(userID);
+        //msg(userID);
         firebaseAnalytics.setUserId(userID);
 
 
@@ -500,7 +504,7 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
 
                                 //btSocket.getOutputStream().write("D".toString().getBytes());
                                 btSocket.getOutputStream().write(("D" + position + finishedTasksList.size()).getBytes());
-                                msg(String.valueOf(tasksList.size()));
+                                //msg(String.valueOf(tasksList.size()));
 
 
                             } catch (IOException e) {
@@ -706,7 +710,7 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
 
                                                                 int list_index= find(encodedBytes, (byte) 'f');
                                                                 int session_end_time = encodedBytes[list_index+1];
-                                                                msg("session duration: "+ String.valueOf(encodedBytes[list_index+1]));
+                                                                //msg("session duration: "+ String.valueOf(encodedBytes[list_index+1]));
 
                                                                 Bundle bundle = new Bundle();
                                                                 bundle.putInt("session_ended_after", session_end_time);
@@ -720,7 +724,7 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
 
                                                                 int list_index= find(encodedBytes, (byte) 'e');
                                                                 int pom_end_time = encodedBytes[list_index+1];
-                                                                msg("Pom duration: "+ String.valueOf(encodedBytes[list_index+1]));
+                                                                //msg("Pom duration: "+ String.valueOf(encodedBytes[list_index+1]));
 
                                                                 Bundle bundle = new Bundle();
                                                                 bundle.putInt("pom_duration", pom_end_time);
@@ -732,7 +736,7 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
                                                             if (contains(encodedBytes,'s')){
                                                                 int list_index= find(encodedBytes, (byte) 's');
                                                                 int pom_start_time = encodedBytes[list_index+1];
-                                                                msg("Pom started after: "+ String.valueOf(encodedBytes[list_index+1]));
+                                                                //msg("Pom started after: "+ String.valueOf(encodedBytes[list_index+1]));
 
                                                                 Bundle bundle = new Bundle();
                                                                 bundle.putInt("duration_from_start", pom_start_time);
@@ -835,9 +839,11 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
                         tasksList.add(taskName);
                         if (tasksList.size()==1){
 
+
                             LocalTime time = LocalTime.now();
+                            //LocalDateTime time= Loca
                             session_start_time = time.toString();
-                            msg(time.toString());
+                            //msg(time.toString());
                             Bundle bundle = new Bundle();
                             bundle.putString("session_time", session_start_time);
                             bundle.putString("user_id", androidId);
@@ -890,10 +896,10 @@ public class ledControl extends AppCompatActivity implements DialogTaskClass.Dia
         {
             try {
 
-
                 myBluetooth = BluetoothAdapter.getDefaultAdapter();//get the mobile bluetooth device
                 //BluetoothDevice dispositivo = myBluetooth.getRemoteDevice("24:6F:28:80:E4:82");//connects to the device's address and checks if it's available
-                BluetoothDevice dispositivo = myBluetooth.getRemoteDevice("FC:F5:C4:07:66:5E"); // second prototype
+                //BluetoothDevice dispositivo = myBluetooth.getRemoteDevice("FC:F5:C4:07:66:5E"); // second prototype
+                BluetoothDevice dispositivo = myBluetooth.getRemoteDevice("B4:E6:2D:EA:3B:63"); // test prototype
                 btSocket = dispositivo.createInsecureRfcommSocketToServiceRecord(myUUID);//create a RFCOMM (SPP) connection
                 BluetoothAdapter.getDefaultAdapter().cancelDiscovery();
                 btSocket.connect();//start connection
